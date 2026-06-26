@@ -1,0 +1,7 @@
+dist/*
+!dist/.gitkeep
+test-results/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
