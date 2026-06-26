@@ -1,5 +1,7 @@
 # Awful Cases
 
+[Website](https://looksawful.github.io/awful-cases/) · [Download ZIP](https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip) · [looksawful.ru](https://looksawful.ru)
+
 Windows tray utility for changing the case and typography of selected text.
 
 Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app replaces the selection with the transformed version.
@@ -88,4 +90,5 @@ The Awful Cases name, icon, visual identity and branding assets are copyright Iv
 Ivan Krushinski / looksawful
 
 https://looksawful.ru
+
 

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>Awful Cases</title>
+    <meta
+      content="Windows tray utility for changing the case and typography of selected text."
+      name="description"
+    />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --page: min(100% - 40px, 760px);
+        --black: #000;
+        --white: #fff;
+        --muted: rgba(0, 0, 0, 0.58);
+        --fill: #f6f8fa;
+        --line: 1px solid #000;
+        --line-soft: 1px solid rgba(0, 0, 0, 0.12);
+        --radius: 12px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--white);
+        color: var(--black);
+        font-family: "Rubik", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: var(--white);
+      }
+
+      a {
+        color: inherit;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+      }
+
+      h1,
+      h2,
+      p,
+      ul,
+      pre {
+        margin: 0;
+      }
+
+      ul {
+        padding-left: 1.1rem;
+      }
+
+      li {
+        margin: 0.32rem 0;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+        fill: currentColor;
+      }
+
+      code {
+        font-family: var(--mono);
+      }
+
+      .page {
+        width: var(--page);
+        margin: 0 auto;
+        padding: clamp(48px, 8vw, 84px) 0;
+      }
+
+      .doc {
+        display: grid;
+        gap: clamp(26px, 4.6vw, 44px);
+      }
+
+      .intro {
+        display: grid;
+        gap: 17px;
+      }
+
+      h1 {
+        max-width: 12ch;
+        font-size: clamp(42px, 7vw, 68px);
+        line-height: 0.99;
+        letter-spacing: -0.052em;
+        font-weight: 700;
+      }
+
+      h2 {
+        font-size: clamp(20px, 2.8vw, 26px);
+        line-height: 1.1;
+        letter-spacing: -0.032em;
+        font-weight: 700;
+      }
+
+      p,
+      li {
+        font-size: 16px;
+        line-height: 1.58;
+      }
+
+      .lead {
+        max-width: 620px;
+        font-size: clamp(18px, 2.3vw, 21px);
+        line-height: 1.42;
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 32px;
+        padding: 6px 10px 7px;
+        border: var(--line);
+        border-radius: 999px;
+        color: var(--black);
+        font-size: 13px;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .links a:hover,
+      .links a:focus-visible {
+        background: var(--black);
+        color: var(--white);
+        outline: 0;
+      }
+
+      .block {
+        display: grid;
+        gap: 14px;
+      }
+
+      .block > p {
+        color: var(--muted);
+      }
+
+      .code {
+        position: relative;
+        overflow: hidden;
+        border: var(--line-soft);
+        border-radius: var(--radius);
+        background: var(--fill);
+      }
+
+      .code pre {
+        overflow: auto;
+        padding: 42px 16px 16px;
+        background: var(--fill);
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.62;
+        white-space: pre;
+      }
+
+      .code code {
+        font-family: inherit;
+      }
+
+      .copy {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 26px;
+        padding: 4px 8px 5px;
+        border: var(--line-soft);
+        border-radius: 999px;
+        background: var(--white);
+        color: var(--black);
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .copy svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      .copy:hover,
+      .copy:focus-visible,
+      .copy.is-copied {
+        background: var(--black);
+        color: var(--white);
+        outline: 0;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 560px) {
+        :root {
+          --page: min(100% - 32px, 760px);
+        }
+
+        .page {
+          padding-top: 36px;
+        }
+
+        h1 {
+          font-size: clamp(40px, 17vw, 60px);
+        }
+
+        .links {
+          gap: 6px;
+        }
+
+        .links a {
+          min-height: 30px;
+          padding-inline: 9px;
+        }
+
+        .code pre {
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <article class="doc">
+        <section class="intro" aria-labelledby="title">
+          <h1 id="title">Awful Cases</h1>
+          <p class="lead">Windows tray utility for changing the case and typography of selected text.</p>
+          <ul class="links" aria-label="Project links">
+            <li><a href="https://github.com/looksawful/awful-cases"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>GitHub</span></a></li>
+            <li><a href="https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25ZM3.75 13a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/></svg><span>Download ZIP</span></a></li>
+            <li><a href="https://github.com/looksawful/awful-cases/blob/main/README.md"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.5A2.75 2.75 0 0 1 8 3.75 2.75 2.75 0 0 1 10.75 1h4.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.5a1.25 1.25 0 0 0-1.25 1.25.75.75 0 0 1-1.5 0A1.25 1.25 0 0 0 6.75 13H.75a.75.75 0 0 1-.75-.75V1.75Zm1.5.75v9h5.25c.47 0 .9.12 1.25.34V3.75c0-.69-.56-1.25-1.25-1.25H1.5Zm7 9.34c.36-.22.78-.34 1.25-.34h4.75v-9h-3.75c-.69 0-1.25.56-1.25 1.25v8.09Z"/></svg><span>README</span></a></li>
+            <li><a href="https://github.com/looksawful/awful-cases/blob/main/LICENSE"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.75.75a.75.75 0 0 0-1.5 0V2h-5a.75.75 0 0 0 0 1.5h.52L.04 8.65a.75.75 0 0 0-.04.35C0 10.66 1.34 12 3 12s3-1.34 3-3a.75.75 0 0 0-.04-.25L3.18 3.5h4.07v10H5.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-1.5v-10h4.07l-2.78 5.25A.75.75 0 0 0 10 9c0 1.66 1.34 3 3 3s3-1.34 3-3a.75.75 0 0 0-.04-.25L13.23 3.5h.52a.75.75 0 0 0 0-1.5h-5V.75ZM1.7 8.25 3 5.8l1.3 2.45H1.7Zm10 0L13 5.8l1.3 2.45h-2.6Z"/></svg><span>License</span></a></li>
+            <li><a href="https://github.com/looksawful"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>@looksawful</span></a></li>
+            <li><a href="https://looksawful.ru"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 1.74A6.51 6.51 0 0 0 4.44 5H2.38a6.53 6.53 0 0 1 3.4-3.26ZM1.5 8c0-.52.06-1.02.18-1.5h2.55a11.15 11.15 0 0 0 0 3H1.68A6.56 6.56 0 0 1 1.5 8Zm.88 3h2.06c.28 1.32.76 2.46 1.34 3.26A6.53 6.53 0 0 1 2.38 11ZM7.25 14.5c-.43-.35-1.03-1.55-1.35-3.5h1.35v3.5Zm0-5H5.7a9.7 9.7 0 0 1 0-3h1.55v3Zm0-4H5.9C6.22 3.55 6.82 2.35 7.25 2v3.5Zm6.37-.5h-2.06a8.71 8.71 0 0 0-1.34-3.26A6.53 6.53 0 0 1 13.62 5ZM8.75 2c.43.35 1.03 1.55 1.35 3.5H8.75V2Zm0 4.5h1.55a9.7 9.7 0 0 1 0 3H8.75v-3Zm0 8V11h1.35c-.32 1.95-.92 3.15-1.35 3.5Zm1.47-.24A8.71 8.71 0 0 0 11.56 11h2.06a6.53 6.53 0 0 1-3.4 3.26Zm1.55-4.76a11.15 11.15 0 0 0 0-3h2.55a6.55 6.55 0 0 1 0 3h-2.55Z"/></svg><span>looksawful.ru</span></a></li>
+          </ul>
+        </section>
+
+        <section class="block">
+          <p>
+            Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app
+            replaces the selection with the transformed version.
+          </p>
+          <ul>
+            <li>Uppercase, lowercase, toggle case and title case</li>
+            <li>Typography cleanup with URL, email, file path and inline code protection</li>
+          </ul>
+        </section>
+
+        <section class="block" aria-labelledby="install">
+          <h2 id="install">Install</h2>
+          <div class="code">
+  <button class="copy" type="button" data-copy-target="install-code" aria-label="Copy code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 6.75C0 5.78.78 5 1.75 5h7.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75h-7.5C.78 16 0 15.22 0 14.25v-7.5ZM1.75 6.5a.25.25 0 0 0-.25.25v7.5c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5ZM5 1.75C5 .78 5.78 0 6.75 0h7.5C15.22 0 16 .78 16 1.75v7.5c0 .97-.78 1.75-1.75 1.75H13.5V9.5h.75c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25V2.5H5v-.75Z"/></svg><span>copy</span></button>
+  <pre><code id="install-code">git clone https://github.com/looksawful/awful-cases.git
+cd awful-cases</code></pre>
+</div>
+          <p class="note">You can also download the repository as a ZIP archive from GitHub.</p>
+        </section>
+
+        <section class="block" aria-labelledby="usage">
+          <h2 id="usage">Usage</h2>
+          <p>Select text in any editable field and press one of the shortcuts.</p>
+          <div class="code">
+  <button class="copy" type="button" data-copy-target="shortcuts-code" aria-label="Copy code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 6.75C0 5.78.78 5 1.75 5h7.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75h-7.5C.78 16 0 15.22 0 14.25v-7.5ZM1.75 6.5a.25.25 0 0 0-.25.25v7.5c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5ZM5 1.75C5 .78 5.78 0 6.75 0h7.5C15.22 0 16 .78 16 1.75v7.5c0 .97-.78 1.75-1.75 1.75H13.5V9.5h.75c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25V2.5H5v-.75Z"/></svg><span>copy</span></button>
+  <pre><code id="shortcuts-code">uppercase             ctrl + alt + shift + up
+lowercase             ctrl + alt + shift + down
+toggle case           ctrl + alt + shift + right
+title case            ctrl + alt + shift + left
+typography cleanup    ctrl + alt + shift + pgdn
+sentence cleanup      ctrl + alt + shift + delete
+settings              ctrl + alt + shift + home</code></pre>
+</div>
+        </section>
+
+        <section class="block" aria-labelledby="license">
+          <h2 id="license">License</h2>
+          <p>
+            Source code is licensed under the MIT License. The Awful Cases name, icon, visual identity and branding
+            assets are copyright Ivan Krushinsky and are not licensed for reuse as branding assets.
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <script>
+      document.querySelectorAll("[data-copy-target]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          if (!target) return;
+
+          try {
+            await navigator.clipboard.writeText(target.textContent.trim());
+            button.classList.add("is-copied");
+            const label = button.querySelector("span");
+            const oldText = label ? label.textContent : "copy";
+            if (label) label.textContent = "copied";
+            window.setTimeout(() => {
+              button.classList.remove("is-copied");
+              if (label) label.textContent = oldText;
+            }, 1000);
+          } catch {
+            const range = document.createRange();
+            range.selectNodeContents(target);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
