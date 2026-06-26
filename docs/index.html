@@ -219,6 +219,24 @@
         font-size: 14px;
       }
 
+      .footer {
+        display: grid;
+        gap: 14px;
+        padding-top: clamp(22px, 4vw, 34px);
+        border-top: var(--line-soft);
+        color: var(--muted);
+      }
+
+      .footer p {
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .footer .links a {
+        border-color: rgba(0, 0, 0, 0.24);
+        color: var(--black);
+      }
+
       @media (max-width: 560px) {
         :root {
           --page: min(100% - 32px, 760px);
@@ -254,13 +272,8 @@
         <section class="intro" aria-labelledby="title">
           <h1 id="title">Awful Cases</h1>
           <p class="lead">Windows tray utility for changing the case and typography of selected text.</p>
-          <ul class="links" aria-label="Project links">
+          <ul class="links" aria-label="Primary project links">
             <li><a href="https://github.com/looksawful/awful-cases"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>GitHub</span></a></li>
-            <li><a href="https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25ZM3.75 13a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/></svg><span>Download ZIP</span></a></li>
-            <li><a href="https://github.com/looksawful/awful-cases/blob/main/README.md"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.5A2.75 2.75 0 0 1 8 3.75 2.75 2.75 0 0 1 10.75 1h4.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.5a1.25 1.25 0 0 0-1.25 1.25.75.75 0 0 1-1.5 0A1.25 1.25 0 0 0 6.75 13H.75a.75.75 0 0 1-.75-.75V1.75Zm1.5.75v9h5.25c.47 0 .9.12 1.25.34V3.75c0-.69-.56-1.25-1.25-1.25H1.5Zm7 9.34c.36-.22.78-.34 1.25-.34h4.75v-9h-3.75c-.69 0-1.25.56-1.25 1.25v8.09Z"/></svg><span>README</span></a></li>
-            <li><a href="https://github.com/looksawful/awful-cases/blob/main/LICENSE"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.75.75a.75.75 0 0 0-1.5 0V2h-5a.75.75 0 0 0 0 1.5h.52L.04 8.65a.75.75 0 0 0-.04.35C0 10.66 1.34 12 3 12s3-1.34 3-3a.75.75 0 0 0-.04-.25L3.18 3.5h4.07v10H5.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-1.5v-10h4.07l-2.78 5.25A.75.75 0 0 0 10 9c0 1.66 1.34 3 3 3s3-1.34 3-3a.75.75 0 0 0-.04-.25L13.23 3.5h.52a.75.75 0 0 0 0-1.5h-5V.75ZM1.7 8.25 3 5.8l1.3 2.45H1.7Zm10 0L13 5.8l1.3 2.45h-2.6Z"/></svg><span>License</span></a></li>
-            <li><a href="https://github.com/looksawful"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>@looksawful</span></a></li>
-            <li><a href="https://looksawful.ru"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 1.74A6.51 6.51 0 0 0 4.44 5H2.38a6.53 6.53 0 0 1 3.4-3.26ZM1.5 8c0-.52.06-1.02.18-1.5h2.55a11.15 11.15 0 0 0 0 3H1.68A6.56 6.56 0 0 1 1.5 8Zm.88 3h2.06c.28 1.32.76 2.46 1.34 3.26A6.53 6.53 0 0 1 2.38 11ZM7.25 14.5c-.43-.35-1.03-1.55-1.35-3.5h1.35v3.5Zm0-5H5.7a9.7 9.7 0 0 1 0-3h1.55v3Zm0-4H5.9C6.22 3.55 6.82 2.35 7.25 2v3.5Zm6.37-.5h-2.06a8.71 8.71 0 0 0-1.34-3.26A6.53 6.53 0 0 1 13.62 5ZM8.75 2c.43.35 1.03 1.55 1.35 3.5H8.75V2Zm0 4.5h1.55a9.7 9.7 0 0 1 0 3H8.75v-3Zm0 8V11h1.35c-.32 1.95-.92 3.15-1.35 3.5Zm1.47-.24A8.71 8.71 0 0 0 11.56 11h2.06a6.53 6.53 0 0 1-3.4 3.26Zm1.55-4.76a11.15 11.15 0 0 0 0-3h2.55a6.55 6.55 0 0 1 0 3h-2.55Z"/></svg><span>looksawful.ru</span></a></li>
           </ul>
         </section>
 
@@ -277,12 +290,14 @@
 
         <section class="block" aria-labelledby="install">
           <h2 id="install">Install</h2>
+          <ul class="links" aria-label="Install links">
+            <li><a href="https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25ZM3.75 13a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/></svg><span>Download ZIP</span></a></li>
+          </ul>
           <div class="code">
   <button class="copy" type="button" data-copy-target="install-code" aria-label="Copy code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 6.75C0 5.78.78 5 1.75 5h7.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75h-7.5C.78 16 0 15.22 0 14.25v-7.5ZM1.75 6.5a.25.25 0 0 0-.25.25v7.5c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5ZM5 1.75C5 .78 5.78 0 6.75 0h7.5C15.22 0 16 .78 16 1.75v7.5c0 .97-.78 1.75-1.75 1.75H13.5V9.5h.75c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25V2.5H5v-.75Z"/></svg><span>copy</span></button>
   <pre><code id="install-code">git clone https://github.com/looksawful/awful-cases.git
 cd awful-cases</code></pre>
 </div>
-          <p class="note">You can also download the repository as a ZIP archive from GitHub.</p>
         </section>
 
         <section class="block" aria-labelledby="usage">
@@ -300,13 +315,18 @@ settings              ctrl + alt + shift + home</code></pre>
 </div>
         </section>
 
-        <section class="block" aria-labelledby="license">
-          <h2 id="license">License</h2>
+        <footer class="footer">
+          <ul class="links" aria-label="Secondary project links">
+            <li><a href="https://github.com/looksawful/awful-cases/blob/main/README.md"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.5A2.75 2.75 0 0 1 8 3.75 2.75 2.75 0 0 1 10.75 1h4.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.5a1.25 1.25 0 0 0-1.25 1.25.75.75 0 0 1-1.5 0A1.25 1.25 0 0 0 6.75 13H.75a.75.75 0 0 1-.75-.75V1.75Zm1.5.75v9h5.25c.47 0 .9.12 1.25.34V3.75c0-.69-.56-1.25-1.25-1.25H1.5Zm7 9.34c.36-.22.78-.34 1.25-.34h4.75v-9h-3.75c-.69 0-1.25.56-1.25 1.25v8.09Z"/></svg><span>README</span></a></li>
+            <li><a href="https://github.com/looksawful/awful-cases/blob/main/LICENSE"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.75.75a.75.75 0 0 0-1.5 0V2h-5a.75.75 0 0 0 0 1.5h.52L.04 8.65a.75.75 0 0 0-.04.35C0 10.66 1.34 12 3 12s3-1.34 3-3a.75.75 0 0 0-.04-.25L3.18 3.5h4.07v10H5.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-1.5v-10h4.07l-2.78 5.25A.75.75 0 0 0 10 9c0 1.66 1.34 3 3 3s3-1.34 3-3a.75.75 0 0 0-.04-.25L13.23 3.5h.52a.75.75 0 0 0 0-1.5h-5V.75ZM1.7 8.25 3 5.8l1.3 2.45H1.7Zm10 0L13 5.8l1.3 2.45h-2.6Z"/></svg><span>License</span></a></li>
+            <li><a href="https://github.com/looksawful"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>@looksawful</span></a></li>
+            <li><a href="https://looksawful.ru"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 1.74A6.51 6.51 0 0 0 4.44 5H2.38a6.53 6.53 0 0 1 3.4-3.26ZM1.5 8c0-.52.06-1.02.18-1.5h2.55a11.15 11.15 0 0 0 0 3H1.68A6.56 6.56 0 0 1 1.5 8Zm.88 3h2.06c.28 1.32.76 2.46 1.34 3.26A6.53 6.53 0 0 1 2.38 11ZM7.25 14.5c-.43-.35-1.03-1.55-1.35-3.5h1.35v3.5Zm0-5H5.7a9.7 9.7 0 0 1 0-3h1.55v3Zm0-4H5.9C6.22 3.55 6.82 2.35 7.25 2v3.5Zm6.37-.5h-2.06a8.71 8.71 0 0 0-1.34-3.26A6.53 6.53 0 0 1 13.62 5ZM8.75 2c.43.35 1.03 1.55 1.35 3.5H8.75V2Zm0 4.5h1.55a9.7 9.7 0 0 1 0 3H8.75v-3Zm0 8V11h1.35c-.32 1.95-.92 3.15-1.35 3.5Zm1.47-.24A8.71 8.71 0 0 0 11.56 11h2.06a6.53 6.53 0 0 1-3.4 3.26Zm1.55-4.76a11.15 11.15 0 0 0 0-3h2.55a6.55 6.55 0 0 1 0 3h-2.55Z"/></svg><span>looksawful.ru</span></a></li>
+          </ul>
           <p>
             Source code is licensed under the MIT License. The Awful Cases name, icon, visual identity and branding
             assets are copyright Ivan Krushinsky and are not licensed for reuse as branding assets.
           </p>
-        </section>
+        </footer>
       </article>
     </main>
 
