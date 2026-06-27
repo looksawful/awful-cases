@@ -1,360 +1,292 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1" name="viewport" />
-    <title>Awful Cases</title>
-    <meta
-      content="Windows tray utility for changing the case and typography of selected text."
-      name="description"
-    />
-    <link href="https://fonts.googleapis.com" rel="preconnect" />
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&amp;display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --page: min(100% - 40px, 760px);
-        --black: #000;
-        --white: #fff;
-        --muted: rgba(0, 0, 0, 0.58);
-        --fill: #f6f8fa;
-        --line: 1px solid #000;
-        --line-soft: 1px solid rgba(0, 0, 0, 0.12);
-        --radius: 12px;
-        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      }
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Awful Cases</title>
+<meta name="description" content="Windows tray utility for changing the case and typography of selected text.">
+<style>
+@font-face{
+  font-family:"Pixelated MS Sans Serif";
+  src:url("https://unpkg.com/98.css@0.1.20/dist/ms_sans_serif.woff2") format("woff2"),
+      url("https://unpkg.com/98.css@0.1.20/dist/ms_sans_serif.woff") format("woff");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"Pixelated MS Sans Serif";
+  src:url("https://unpkg.com/98.css@0.1.20/dist/ms_sans_serif_bold.woff2") format("woff2"),
+      url("https://unpkg.com/98.css@0.1.20/dist/ms_sans_serif_bold.woff") format("woff");
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+}
+:root{
+  color-scheme:light;
+  --page:min(100% - 40px,1040px);
+  --desktop:#008080;
+  --desktop-dark:#006c6c;
+  --face:#c0c0c0;
+  --light:#fff;
+  --shadow:#808080;
+  --dark:#404040;
+  --black:#000;
+  --title:#000080;
+  --title2:#1084d0;
+  --field:#fff;
+  --link:#000080;
+  --console:#000;
+  --console-text:#c0c0c0;
+  --console-green:#00ff00;
+  --console-cyan:#80ffff;
+  --console-yellow:#ffff80;
+  --sys:"Pixelated MS Sans Serif","MS Sans Serif","Microsoft Sans Serif",Tahoma,Arial,sans-serif;
+  --mono:Terminal,"Fixedsys","Lucida Console",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html{min-width:320px;background:var(--desktop);color:var(--black);font-family:var(--sys);font-size:12px;text-size-adjust:100%}
+body{margin:0;min-width:320px;background:linear-gradient(135deg,var(--desktop),var(--desktop-dark));font:12px/1.4 var(--sys)}
+a{color:var(--link);text-decoration:underline;text-underline-offset:2px}
+h1,h2,p,ul,pre,table{margin:0}
+ul{padding-left:18px}
+li{margin:4px 0;line-height:1.45}
+p{line-height:1.55}
+pre,code{font-family:var(--mono)}
+.desktop{width:var(--page);margin:0 auto;padding:clamp(16px,4vw,46px) 0;display:grid;gap:16px;align-items:start}
+.window{width:100%;max-width:100%;background:var(--face);border:2px solid;border-color:var(--light) var(--dark) var(--dark) var(--light);box-shadow:1px 1px 0 var(--black)}
+.window--md{max-width:760px}
+.window--sm{max-width:560px}
+.window--right{justify-self:end}
+.titlebar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px;padding:2px 4px 2px 7px;background:linear-gradient(90deg,var(--title),var(--title2));color:#fff;font-size:12px;font-weight:700;line-height:1}
+.titlebar--dos{background:var(--title)}
+.titlebar__text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.titlebar__buttons{display:flex;gap:2px;flex:0 0 auto}
+.titlebar__button{display:grid;place-items:center;width:18px;height:17px;background:var(--face);color:var(--black);border:2px solid;border-color:var(--light) var(--dark) var(--dark) var(--light);font-size:11px;font-weight:700;line-height:1;font-style:normal}
+.menubar{display:flex;gap:18px;padding:5px 9px 6px;border-bottom:1px solid var(--shadow);font-size:12px;line-height:1;color:var(--black);overflow:hidden}
+.client{display:grid;gap:11px;padding:11px;background:var(--face)}
+.window--text .client{gap:8px}
+.window--text h1{font-size:20px;line-height:1.15;font-weight:700;color:var(--black)}
+.window--hero{max-width:100%}
+.window--hero .client{padding:15px;gap:13px}
+.hero-title{font-family:var(--sys);font-size:clamp(42px,8vw,78px);line-height:.92;font-weight:700;letter-spacing:-.03em;color:var(--black)}
+.hero-subtitle{font-size:13px;line-height:1.45;color:var(--black);max-width:52rem}
+.hero-copy{display:grid;gap:8px;max-width:52rem}
+.lead{font-size:13px;line-height:1.45;color:var(--black)}
+.note{color:#333;font-size:12px;line-height:1.45}
+.command-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.button,.copy{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:5px 10px 6px;background:var(--face);color:var(--black);text-decoration:none;white-space:nowrap;font:700 12px/1 var(--sys);cursor:pointer;border:2px solid;border-color:var(--light) var(--dark) var(--dark) var(--light)}
+.button:active,.copy:active,.copy.is-copied{border-color:var(--dark) var(--light) var(--light) var(--dark);padding:5px 8px 4px 10px}
+.btn-u{text-decoration:underline; text-underline-offset:1px;}
+.field{min-width:0;background:var(--field);color:var(--black);border:2px solid;border-color:var(--shadow) var(--light) var(--light) var(--shadow);padding:11px}
+.field--list{padding:0;overflow:auto}
+.field--plain{display:grid;gap:8px}
+.listbox{list-style:none;margin:0;padding:5px 0;background:var(--field)}
+.listbox li{margin:0;padding:4px 9px;font-size:12px;line-height:1.35}
+.listbox li:nth-child(odd){background:#f7f7f7}
+.list-view{overflow:auto;background:var(--field);border:2px solid;border-color:var(--shadow) var(--light) var(--light) var(--shadow)}
+table{width:100%;border-collapse:collapse;background:var(--field)}
+th,td{padding:7px 9px;border:1px solid #b8b8b8;text-align:left;vertical-align:top;font-size:12px;line-height:1.35;color:var(--black)}
+th{background:var(--face);font-weight:700}
+.kbd{font-family:var(--sys);white-space:normal;color:var(--black)}
+.dos-body{display:grid;gap:0;background:var(--console);border:2px solid;border-color:var(--shadow) var(--light) var(--light) var(--shadow);margin:4px}
+.dos-tools{display:flex;justify-content:flex-end;gap:5px;padding:6px 6px 0;background:var(--console)}
+.copy{min-height:24px;padding:4px 10px 5px;font-size:12px;font-weight:700}
+.copy:active,.copy.is-copied{padding:4px 8px 3px 10px}
+.dos-body pre{overflow:auto;margin:0;padding:11px 13px 14px;background:var(--console);color:var(--console-text);font:12px/1.45 Terminal,"Fixedsys","Lucida Console",Consolas,"Courier New",monospace;white-space:pre}
+.dos-body .prompt{color:var(--console-green)}
+.dos-body .path{color:var(--console-yellow)}
+.dos-body .url{color:var(--console-cyan)}
+.dos-body .comment{color:#a0a0a0}
+@media(max-width:760px){
+  :root{--page:min(100% - 24px,1040px)}
+  .desktop{padding:12px 0;gap:12px}
+  .window--md,.window--sm,.window--right{max-width:100%;justify-self:stretch}
+  .client{gap:9px;padding:9px}
+  .menubar{gap:12px}
+}
+@media(max-width:520px){
+  :root{--page:min(100% - 16px,1040px)}
+  body{font-size:12px}
+  .desktop{gap:10px}
+  .client{padding:8px;gap:8px}
+  .window--text h1{font-size:18px}
+  .hero-title{font-size:clamp(38px,14vw,58px)}
+  .hero-subtitle,.lead{font-size:12px}
+  .command-row{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .button{width:100%;justify-content:center;white-space:normal;text-align:center}
+  table,thead,tbody,tr,th,td{display:block;width:100%}
+  thead{display:none}
+  tr{border-bottom:1px solid #b8b8b8}
+  tr:last-child{border-bottom:0}
+  td{border:0;border-bottom:1px dotted #d0d0d0;padding:7px 8px}
+  td:last-child{border-bottom:0}
+  td:first-child{background:#f2f2f2;font-weight:700}
+  .titlebar{font-size:12px}
+  .dos-body pre{font-size:11px;padding:10px 11px 12px}
+}
+</style>
+</head>
+<body>
+<main class="desktop">
+  <section class="window window--hero" aria-labelledby="project-title">
+    <div class="titlebar">
+      <span class="titlebar__text">Awful Cases</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <nav class="menubar" aria-label="Window menu"><span>File</span><span>Edit</span><span>View</span><span>Help</span></nav>
+    <div class="client">
+      <h1 id="project-title" class="hero-title">Awful Cases</h1>
+      <p class="hero-subtitle">Windows tray utility for changing the case and typography of selected text.</p>
+      <div class="hero-copy">
+        <p>Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app replaces the selection with the transformed version.</p>
+      </div>
+      <div class="command-row" aria-label="Project links">
+        <a class="button" href="https://looksawful.github.io/awful-cases/"><span class="btn-u">W</span>ebsite</a>
+        <a class="button" href="https://github.com/looksawful/awful-cases"><span class="btn-u">G</span>itHub</a>
+        <a class="button" href="https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip"><span class="btn-u">D</span>ownload ZIP</a>
+        <a class="button" href="https://looksawful.ru"><span class="btn-u">L</span>ooksawful.ru</a>
+      </div>
+    </div>
+  </section>
 
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
+  <section class="window window--md window--field" aria-labelledby="features-title">
+    <div class="titlebar">
+      <span class="titlebar__text" id="features-title">Operations</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="client">
+      <div class="field field--list">
+        <ul class="listbox">
+          <li>Uppercase</li>
+          <li>Lowercase</li>
+          <li>Toggle case</li>
+          <li>Title case</li>
+          <li>Typography cleanup</li>
+          <li>Sentence-level typography cleanup</li>
+          <li>URL, email, file path and inline code protection</li>
+          <li>Clipboard restoration after each transform</li>
+          <li>Configurable hotkeys through <code>awful-cases.ini</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-      html {
-        background: var(--white);
-        color: var(--black);
-        font-family: "Rubik", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        text-size-adjust: 100%;
-      }
+  <section class="window window--md window--field window--right" aria-labelledby="shortcuts-title">
+    <div class="titlebar">
+      <span class="titlebar__text" id="shortcuts-title">Default shortcuts</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="client">
+      <p class="note">All actions use <span class="kbd">Ctrl + Alt + Shift</span> plus one key.</p>
+      <div class="list-view">
+        <table>
+          <thead><tr><th>Action</th><th>Shortcut</th></tr></thead>
+          <tbody>
+            <tr><td>Uppercase</td><td><span class="kbd">Ctrl + Alt + Shift + Up</span></td></tr>
+            <tr><td>Lowercase</td><td><span class="kbd">Ctrl + Alt + Shift + Down</span></td></tr>
+            <tr><td>Toggle case</td><td><span class="kbd">Ctrl + Alt + Shift + Right</span></td></tr>
+            <tr><td>Title case</td><td><span class="kbd">Ctrl + Alt + Shift + Left</span></td></tr>
+            <tr><td>Typography cleanup</td><td><span class="kbd">Ctrl + Alt + Shift + PgDn</span></td></tr>
+            <tr><td>Sentence typography</td><td><span class="kbd">Ctrl + Alt + Shift + Delete</span></td></tr>
+            <tr><td>Settings</td><td><span class="kbd">Ctrl + Alt + Shift + Home</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 
-      body {
-        margin: 0;
-        min-width: 320px;
-        background: var(--white);
-      }
+  <section class="window window--md window--field" aria-labelledby="typography-title">
+    <div class="titlebar">
+      <span class="titlebar__text" id="typography-title">Typography cleanup</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="client">
+      <div class="field field--list">
+        <ul class="listbox">
+          <li>Dashes</li>
+          <li>Quotes</li>
+          <li>Hyphens</li>
+          <li>Spaces and punctuation spacing</li>
+          <li>Short words with non-breaking spaces</li>
+          <li>Phone numbers and email text</li>
+          <li>Symbols such as ©, ® and ™</li>
+          <li>Ellipsis</li>
+          <li>Numbers and markers such as № and §</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-      a {
-        color: inherit;
-        text-decoration-thickness: 1px;
-        text-underline-offset: 0.18em;
-      }
+  <section class="window window--sm window--text window--right" aria-labelledby="requirements-title">
+    <div class="titlebar">
+      <span class="titlebar__text" id="requirements-title">Requirements</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="client">
+      <p>Windows.</p>
+      <p>AutoHotkey v2 is required only when running the <code>.ahk</code> source file directly.</p>
+    </div>
+  </section>
 
-      h1,
-      h2,
-      p,
-      ul,
-      pre {
-        margin: 0;
-      }
+  <section class="window window--md window--text" aria-labelledby="license-title">
+    <div class="titlebar">
+      <span class="titlebar__text" id="license-title">License and rights</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="client">
+      <p>Source code is licensed under the MIT License.</p>
+      <p>The Awful Cases name, icon, visual identity and branding assets are copyright Ivan Krushinsky and are not licensed for reuse as branding assets.</p>
+      <p>Author: Ivan Krushinski / looksawful. <a href="https://looksawful.ru">https://looksawful.ru</a></p>
+    </div>
+  </section>
 
-      ul {
-        padding-left: 1.1rem;
-      }
+  <section class="window window--md window--right window--console" aria-labelledby="install-title">
+    <div class="titlebar titlebar--dos">
+      <span class="titlebar__text" id="install-title">MS-DOS Prompt - install</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="dos-body">
+      <div class="dos-tools"><button class="copy" type="button" data-copy-target="install-code"><span class="btn-u">C</span>opy</button></div>
+      <pre><code id="install-code"><span class="prompt">C:\&gt;</span> git clone <span class="url">https://github.com/looksawful/awful-cases.git</span>
+<span class="prompt">C:\&gt;</span> cd <span class="path">awful-cases</span></code></pre>
+    </div>
+  </section>
 
-      li {
-        margin: 0.32rem 0;
-      }
-
-      svg {
-        width: 16px;
-        height: 16px;
-        flex: 0 0 auto;
-        fill: currentColor;
-      }
-
-      code {
-        font-family: var(--mono);
-      }
-
-      .page {
-        width: var(--page);
-        margin: 0 auto;
-        padding: clamp(48px, 8vw, 84px) 0;
-      }
-
-      .doc {
-        display: grid;
-        gap: clamp(26px, 4.6vw, 44px);
-      }
-
-      .intro {
-        display: grid;
-        gap: 17px;
-      }
-
-      h1 {
-        max-width: 12ch;
-        font-size: clamp(42px, 7vw, 68px);
-        line-height: 0.99;
-        letter-spacing: -0.052em;
-        font-weight: 700;
-      }
-
-      h2 {
-        font-size: clamp(20px, 2.8vw, 26px);
-        line-height: 1.1;
-        letter-spacing: -0.032em;
-        font-weight: 700;
-      }
-
-      p,
-      li {
-        font-size: 16px;
-        line-height: 1.58;
-      }
-
-      .lead {
-        max-width: 620px;
-        font-size: clamp(18px, 2.3vw, 21px);
-        line-height: 1.42;
-      }
-
-      .links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 0;
-        list-style: none;
-      }
-
-      .links a {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        min-height: 32px;
-        padding: 6px 10px 7px;
-        border: var(--line);
-        border-radius: 999px;
-        color: var(--black);
-        font-size: 13px;
-        line-height: 1;
-        text-decoration: none;
-      }
-
-      .links a:hover,
-      .links a:focus-visible {
-        background: var(--black);
-        color: var(--white);
-        outline: 0;
-      }
-
-      .block {
-        display: grid;
-        gap: 14px;
-      }
-
-      .block > p {
-        color: var(--muted);
-      }
-
-      .code {
-        position: relative;
-        overflow: hidden;
-        border: var(--line-soft);
-        border-radius: var(--radius);
-        background: var(--fill);
-      }
-
-      .code pre {
-        overflow: auto;
-        padding: 42px 16px 16px;
-        background: var(--fill);
-        font-family: var(--mono);
-        font-size: 13px;
-        line-height: 1.62;
-        white-space: pre;
-      }
-
-      .code code {
-        font-family: inherit;
-      }
-
-      .copy {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 26px;
-        padding: 4px 8px 5px;
-        border: var(--line-soft);
-        border-radius: 999px;
-        background: var(--white);
-        color: var(--black);
-        font-family: var(--mono);
-        font-size: 11px;
-        line-height: 1;
-        cursor: pointer;
-      }
-
-      .copy svg {
-        width: 13px;
-        height: 13px;
-      }
-
-      .copy:hover,
-      .copy:focus-visible,
-      .copy.is-copied {
-        background: var(--black);
-        color: var(--white);
-        outline: 0;
-      }
-
-      .note {
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .footer {
-        display: grid;
-        gap: 14px;
-        padding-top: clamp(22px, 4vw, 34px);
-        border-top: var(--line-soft);
-        color: var(--muted);
-      }
-
-      .footer p {
-        font-size: 13px;
-        line-height: 1.45;
-      }
-
-      .footer .links a {
-        border-color: rgba(0, 0, 0, 0.24);
-        color: var(--black);
-      }
-
-      @media (max-width: 560px) {
-        :root {
-          --page: min(100% - 32px, 760px);
-        }
-
-        .page {
-          padding-top: 36px;
-        }
-
-        h1 {
-          font-size: clamp(40px, 17vw, 60px);
-        }
-
-        .links {
-          gap: 6px;
-        }
-
-        .links a {
-          min-height: 30px;
-          padding-inline: 9px;
-        }
-
-        .code pre {
-          font-size: 12px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <main class="page">
-      <article class="doc">
-        <section class="intro" aria-labelledby="title">
-          <h1 id="title">Awful Cases</h1>
-          <p class="lead">Windows tray utility for changing the case and typography of selected text.</p>
-          <ul class="links" aria-label="Primary project links">
-            <li><a href="https://github.com/looksawful/awful-cases"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>GitHub</span></a></li>
-          </ul>
-        </section>
-
-        <section class="block">
-          <p>
-            Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app
-            replaces the selection with the transformed version.
-          </p>
-          <ul>
-            <li>Uppercase, lowercase, toggle case and title case</li>
-            <li>Typography cleanup with URL, email, file path and inline code protection</li>
-          </ul>
-        </section>
-
-        <section class="block" aria-labelledby="install">
-          <h2 id="install">Install</h2>
-          <ul class="links" aria-label="Install links">
-            <li><a href="https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25ZM3.75 13a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/></svg><span>Download ZIP</span></a></li>
-          </ul>
-          <div class="code">
-  <button class="copy" type="button" data-copy-target="install-code" aria-label="Copy code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 6.75C0 5.78.78 5 1.75 5h7.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75h-7.5C.78 16 0 15.22 0 14.25v-7.5ZM1.75 6.5a.25.25 0 0 0-.25.25v7.5c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5ZM5 1.75C5 .78 5.78 0 6.75 0h7.5C15.22 0 16 .78 16 1.75v7.5c0 .97-.78 1.75-1.75 1.75H13.5V9.5h.75c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25V2.5H5v-.75Z"/></svg><span>copy</span></button>
-  <pre><code id="install-code">git clone https://github.com/looksawful/awful-cases.git
-cd awful-cases</code></pre>
-</div>
-        </section>
-
-        <section class="block" aria-labelledby="usage">
-          <h2 id="usage">Usage</h2>
-          <p>Select text in any editable field and press one of the shortcuts.</p>
-          <div class="code">
-  <button class="copy" type="button" data-copy-target="shortcuts-code" aria-label="Copy code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 6.75C0 5.78.78 5 1.75 5h7.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75h-7.5C.78 16 0 15.22 0 14.25v-7.5ZM1.75 6.5a.25.25 0 0 0-.25.25v7.5c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5ZM5 1.75C5 .78 5.78 0 6.75 0h7.5C15.22 0 16 .78 16 1.75v7.5c0 .97-.78 1.75-1.75 1.75H13.5V9.5h.75c.14 0 .25-.11.25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25V2.5H5v-.75Z"/></svg><span>copy</span></button>
-  <pre><code id="shortcuts-code">uppercase             ctrl + alt + shift + up
-lowercase             ctrl + alt + shift + down
-toggle case           ctrl + alt + shift + right
-title case            ctrl + alt + shift + left
-typography cleanup    ctrl + alt + shift + pgdn
-sentence cleanup      ctrl + alt + shift + delete
-settings              ctrl + alt + shift + home</code></pre>
-</div>
-        </section>
-
-        <footer class="footer">
-          <ul class="links" aria-label="Secondary project links">
-            <li><a href="https://github.com/looksawful/awful-cases/blob/main/README.md"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.5A2.75 2.75 0 0 1 8 3.75 2.75 2.75 0 0 1 10.75 1h4.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.5a1.25 1.25 0 0 0-1.25 1.25.75.75 0 0 1-1.5 0A1.25 1.25 0 0 0 6.75 13H.75a.75.75 0 0 1-.75-.75V1.75Zm1.5.75v9h5.25c.47 0 .9.12 1.25.34V3.75c0-.69-.56-1.25-1.25-1.25H1.5Zm7 9.34c.36-.22.78-.34 1.25-.34h4.75v-9h-3.75c-.69 0-1.25.56-1.25 1.25v8.09Z"/></svg><span>README</span></a></li>
-            <li><a href="https://github.com/looksawful/awful-cases/blob/main/LICENSE"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.75.75a.75.75 0 0 0-1.5 0V2h-5a.75.75 0 0 0 0 1.5h.52L.04 8.65a.75.75 0 0 0-.04.35C0 10.66 1.34 12 3 12s3-1.34 3-3a.75.75 0 0 0-.04-.25L3.18 3.5h4.07v10H5.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-1.5v-10h4.07l-2.78 5.25A.75.75 0 0 0 10 9c0 1.66 1.34 3 3 3s3-1.34 3-3a.75.75 0 0 0-.04-.25L13.23 3.5h.52a.75.75 0 0 0 0-1.5h-5V.75ZM1.7 8.25 3 5.8l1.3 2.45H1.7Zm10 0L13 5.8l1.3 2.45h-2.6Z"/></svg><span>License</span></a></li>
-            <li><a href="https://github.com/looksawful"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.8-.2-3.69-.9-3.69-3.99 0-.88.31-1.6.83-2.16-.08-.2-.36-1.02.08-2.13 0 0 .68-.22 2.22.82A7.7 7.7 0 0 1 8 3.84c.69 0 1.38.09 2.02.27 1.54-1.04 2.22-.82 2.22-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.16 0 3.1-1.89 3.79-3.69 3.99.29.25.55.74.55 1.5v2.22c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg><span>@looksawful</span></a></li>
-            <li><a href="https://looksawful.ru"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 1.74A6.51 6.51 0 0 0 4.44 5H2.38a6.53 6.53 0 0 1 3.4-3.26ZM1.5 8c0-.52.06-1.02.18-1.5h2.55a11.15 11.15 0 0 0 0 3H1.68A6.56 6.56 0 0 1 1.5 8Zm.88 3h2.06c.28 1.32.76 2.46 1.34 3.26A6.53 6.53 0 0 1 2.38 11ZM7.25 14.5c-.43-.35-1.03-1.55-1.35-3.5h1.35v3.5Zm0-5H5.7a9.7 9.7 0 0 1 0-3h1.55v3Zm0-4H5.9C6.22 3.55 6.82 2.35 7.25 2v3.5Zm6.37-.5h-2.06a8.71 8.71 0 0 0-1.34-3.26A6.53 6.53 0 0 1 13.62 5ZM8.75 2c.43.35 1.03 1.55 1.35 3.5H8.75V2Zm0 4.5h1.55a9.7 9.7 0 0 1 0 3H8.75v-3Zm0 8V11h1.35c-.32 1.95-.92 3.15-1.35 3.5Zm1.47-.24A8.71 8.71 0 0 0 11.56 11h2.06a6.53 6.53 0 0 1-3.4 3.26Zm1.55-4.76a11.15 11.15 0 0 0 0-3h2.55a6.55 6.55 0 0 1 0 3h-2.55Z"/></svg><span>looksawful.ru</span></a></li>
-          </ul>
-          <p>
-            Source code is licensed under the MIT License. The Awful Cases name, icon, visual identity and branding
-            assets are copyright Ivan Krushinsky and are not licensed for reuse as branding assets.
-          </p>
-        </footer>
-      </article>
-    </main>
-
-    <script>
-      document.querySelectorAll("[data-copy-target]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const target = document.getElementById(button.dataset.copyTarget);
-          if (!target) return;
-
-          try {
-            await navigator.clipboard.writeText(target.textContent.trim());
-            button.classList.add("is-copied");
-            const label = button.querySelector("span");
-            const oldText = label ? label.textContent : "copy";
-            if (label) label.textContent = "copied";
-            window.setTimeout(() => {
-              button.classList.remove("is-copied");
-              if (label) label.textContent = oldText;
-            }, 1000);
-          } catch {
-            const range = document.createRange();
-            range.selectNodeContents(target);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        });
-      });
-    </script>
-  </body>
+  <section class="window window--md window--console" aria-labelledby="run-title">
+    <div class="titlebar titlebar--dos">
+      <span class="titlebar__text" id="run-title">MS-DOS Prompt - run</span>
+      <span class="titlebar__buttons" aria-hidden="true"><i class="titlebar__button">_</i><i class="titlebar__button">□</i><i class="titlebar__button">×</i></span>
+    </div>
+    <div class="dos-body">
+      <div class="dos-tools"><button class="copy" type="button" data-copy-target="run-code"><span class="btn-u">C</span>opy</button></div>
+      <pre><code id="run-code"><span class="prompt">C:\awful-cases&gt;</span> .\awful-cases.exe
+<span class="comment">REM AutoHotkey v2 is required only when running the source file directly.</span>
+<span class="prompt">C:\awful-cases&gt;</span> .\awful-cases.ahk</code></pre>
+    </div>
+  </section>
+</main>
+<script>
+document.querySelectorAll('[data-copy-target]').forEach((button)=>{
+  button.addEventListener('click',async()=>{
+    const target=document.getElementById(button.dataset.copyTarget);
+    if(!target)return;
+    const text=target.textContent.replace(/^C:\\\\>\s?/gm,'').replace(/^C:\\\\awful-cases>\s?/gm,'').replace(/^REM\s?/gm,'# ').trim();
+    try{
+      await navigator.clipboard.writeText(text);
+      const old=button.innerHTML;
+      button.innerHTML='<span class="btn-u">C</span>opied';
+      button.classList.add('is-copied');
+      setTimeout(()=>{button.innerHTML=old;button.classList.remove('is-copied')},1000);
+    }catch{
+      const range=document.createRange();
+      range.selectNodeContents(target);
+      const selection=window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  });
+});
+</script>
+</body>
 </html>
