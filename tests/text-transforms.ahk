@@ -37,6 +37,16 @@ AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+P
 AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
 AssertTrue("F24 allowed by runtime validator", IsAllowedFinalHotkeyKey("F24"))
 
+; Regression coverage for audit issues #1, #2, #3 and #6.
+AssertEqual("decimal dot is preserved", LintText("3.14"), "3.14")
+AssertEqual("decimal comma is preserved", LintText("3,14"), "3,14")
+AssertEqual("semantic version is preserved", LintText("v2.0.1"), "v2.0.1")
+AssertEqual("IPv4-like value is preserved", LintText("192.168.1.1"), "192.168.1.1")
+AssertEqual("prose punctuation still gains a space", LintText("hello,world"), "hello, world")
+AssertEqual("email local-part casing is preserved", NormalizeEmails("User.Name @ Example . COM"), "User.Name@example.com")
+AssertEqual("ordinary symbols survive emoji removal", RemoveEmoji("✓ ★ → 😀"), "✓ ★ → ")
+AssertEqual("ambiguous non-Russian phone-like value is preserved", NormalizePhones("415 555 26 71"), "415 555 26 71")
+
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
 if Failures > 0 {
@@ -44,5 +54,5 @@ if Failures > 0 {
     ExitApp(1)
 }
 
-FileAppend("`nAll characterization tests passed.`n", "*")
+FileAppend("`nAll text transformation tests passed.`n", "*")
 ExitApp(0)
