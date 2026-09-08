@@ -31,7 +31,7 @@ AssertEqual("sentence capitalization", SentenceAwareParagraphTypography("hello. 
 AssertEqual("ellipsis cleanup", LintText("hello..."), "hello…")
 AssertEqual("URL protection", LintText("https://example.com/a--b"), "https://example.com/a--b")
 AssertEqual("Windows path protection", LintText("C:\Work\my--file.txt"), "C:\Work\my--file.txt")
-AssertEqual("Russian hyphenation", FixRussianHyphenation("кое - кто"), "кое‑кто")
+AssertEqual("Russian hyphenation through lint", LintText("кое - кто"), "кое‑кто")
 AssertEqual("Russian phone normalization", NormalizePhones("+7 999 123 45 67"), "+7 (999) 123-45-67")
 AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+PgDn"), "PgDn")
 AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
