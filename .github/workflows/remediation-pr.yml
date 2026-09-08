@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - tools/remediation-trigger.txt
+      - tools/apply-remediation.py
       - .github/workflows/remediation-pr.yml
 
 permissions:
@@ -20,30 +20,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Execute patch block
+      - name: Apply audited fixes
         shell: pwsh
-        run: |
-          $source = Get-Content 'app/awful-cases.ahk' -Raw
-          if ($source -notmatch 'TryRegister\("\^!\+" \. key') {
-            Write-Host 'Runtime is already patched; nothing to do.'
-            exit 0
-          }
-          $lines = Get-Content '.github/workflows/remediation-patch.yml'
-          $start = [Array]::IndexOf($lines, '      - name: Apply focused runtime fixes')
-          if ($start -lt 0) { throw 'Patch step not found.' }
-          $run = -1
-          for ($i = $start; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -eq '        run: |') { $run = $i + 1; break }
-          }
-          if ($run -lt 0) { throw 'Patch run block not found.' }
-          $body = [System.Collections.Generic.List[string]]::new()
-          for ($i = $run; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^      - name: ') { break }
-            if ($lines[$i].Length -ge 10) { $body.Add($lines[$i].Substring(10)) } else { $body.Add('') }
-          }
-          $temp = Join-Path $env:RUNNER_TEMP 'apply-remediation.ps1'
-          Set-Content -LiteralPath $temp -Value $body -Encoding utf8
-          & $temp
+        run: python tools/apply-remediation.py
 
       - name: Commit runtime fixes
         shell: pwsh
