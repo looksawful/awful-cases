@@ -16,9 +16,12 @@ AssertTrue(name, value) {
 
 source := FileRead(A_ScriptDir . "\..\app\awful-cases.ahk", "UTF-8")
 
-; Runtime accepts F24, so the GUI must expose it as well.
+; Runtime accepts F24, so the GUI must either reuse the shared allowed-key array
+; or expose F24 explicitly.
+usesSharedChoices := InStr(source, "keyChoices := AllowedFinalHotkeyKeys") > 0
 RegExMatch(source, "s)keyChoices := \[(.*?)\]\s*captureLabel :=", &choicesMatch)
-AssertTrue("settings GUI choices include F24", choicesMatch && InStr(choicesMatch[1], '"F24"'))
+hasLiteralF24 := choicesMatch && InStr(choicesMatch[1], '"F24"')
+AssertTrue("settings GUI choices include F24", usesSharedChoices || hasLiteralF24)
 
 ; Duplicate assignments must be validated before registration/save instead of silently overriding callbacks.
 AssertTrue("duplicate hotkey validation exists", InStr(source, "ValidateUniqueHotkeys(") > 0)
