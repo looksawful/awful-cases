@@ -34,9 +34,9 @@ Loop Parse text {
 char := A_LoopField
 upper := StrUpper(char)
 lower := StrLower(char)
-if (char = upper && char != lower) {
+if (char == upper && char !== lower) {
 result .= lower
-} else if (char = lower && char != upper) {
+} else if (char == lower && char !== upper) {
 result .= upper
 } else {
 result .= char
@@ -66,51 +66,99 @@ return result
 }
 
 SentenceAwareParagraphTypography(text) {
+features := GetDefaultFeatureState()
+protected := ProtectFragments(&text, features)
+result := SentenceAwareParagraphTypographyCore(text)
+return RestoreFragments(result, protected)
+}
+
+SentenceAwareParagraphTypographyCore(text) {
 result := ""
 len := StrLen(text)
 i := 1
 capitalizeNextWord := true
 nb := Chr(160)
+tokenOpen := Chr(0xE000)
+tokenClose := Chr(0xE001)
+
 while i <= len {
 ch := SubStr(text, i, 1)
+
+if (ch = tokenOpen) {
+endPos := InStr(text, tokenClose, true, i + 1)
+if endPos {
+result .= SubStr(text, i, endPos - i + 1)
+capitalizeNextWord := false
+i := endPos + 1
+continue
+}
+}
+
 if (ch = ".") {
 result .= ch
 if IsSentenceBoundaryDot(text, i) {
-j := i + 1
-while j <= len {
-c := SubStr(text, j, 1)
-if (c = " " || c = "`t" || c = nb) {
-j += 1
-continue
-}
-break
-}
-if (j <= len && RegExMatch(SubStr(text, j, 1), "[A-Za-zА-Яа-яЁё]")) {
+nextPos := NextNonSpacePosition(text, i + 1)
+if (nextPos <= len && IsSentenceStartAt(text, nextPos)) {
 result .= " "
 capitalizeNextWord := true
-i := j
+i := nextPos
 continue
 }
 }
 i += 1
 continue
 }
+
+if (ch = "!" || ch = "?") {
+result .= ch
+nextPos := NextNonSpacePosition(text, i + 1)
+if (nextPos <= len && IsSentenceStartAt(text, nextPos)) {
+result .= " "
+capitalizeNextWord := true
+i := nextPos
+continue
+}
+i += 1
+continue
+}
+
 if (ch = "`r" || ch = "`n") {
 result .= ch
 capitalizeNextWord := true
 i += 1
 continue
 }
+
 if (capitalizeNextWord && RegExMatch(ch, "[A-Za-zА-Яа-яЁё]")) {
 result .= StrUpper(ch)
 capitalizeNextWord := false
 i += 1
 continue
 }
+
 result .= ch
 i += 1
 }
 return result
+}
+
+NextNonSpacePosition(text, startPos) {
+len := StrLen(text)
+pos := startPos
+while pos <= len {
+ch := SubStr(text, pos, 1)
+if (ch = " " || ch = "`t" || ch = Chr(160)) {
+pos += 1
+continue
+}
+break
+}
+return pos
+}
+
+IsSentenceStartAt(text, pos) {
+ch := SubStr(text, pos, 1)
+return RegExMatch(ch, "[A-Za-zА-Яа-яЁё]") || ch = Chr(0xE000)
 }
 
 IsSentenceBoundaryDot(text, dotPos) {
@@ -124,30 +172,14 @@ continue
 }
 break
 }
-nextPos := dotPos + 1
-while nextPos <= len {
-c := SubStr(text, nextPos, 1)
-if (c = " " || c = "`t" || c = Chr(160)) {
-nextPos += 1
-continue
-}
-break
-}
+nextPos := NextNonSpacePosition(text, dotPos + 1)
 prevChar := prevPos >= 1 ? SubStr(text, prevPos, 1) : ""
 nextChar := nextPos <= len ? SubStr(text, nextPos, 1) : ""
 if RegExMatch(prevChar, "\d") && RegExMatch(nextChar, "\d") {
 return false
 }
 if RegExMatch(prevChar, "[A-Za-zА-Яа-яЁё]") && RegExMatch(nextChar, "[A-Za-zА-Яа-яЁё]") {
-lookAhead := nextPos + 1
-while lookAhead <= len {
-c := SubStr(text, lookAhead, 1)
-if (c = " " || c = "`t" || c = Chr(160)) {
-lookAhead += 1
-continue
-}
-break
-}
+lookAhead := NextNonSpacePosition(text, nextPos + 1)
 if (lookAhead <= len && SubStr(text, lookAhead, 1) = ".") {
 return false
 }
@@ -255,6 +287,7 @@ if FeatureValue(features, "ProtectUrls") {
 patterns.Push("i)\bhttps?://[^\s<>()" . dq . "'«»]+")
 patterns.Push("i)\bwww\.[^\s<>()" . dq . "'«»]+")
 patterns.Push("i)\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b")
+patterns.Push("i)\b(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}\b")
 }
 if FeatureValue(features, "ProtectPaths") {
 patterns.Push("[A-Za-z]:\\(?:[^\\/:*?" . dq . "<>|\r\n]+\\)*[^\\/:*?" . dq . "<>|\r\n]*")
