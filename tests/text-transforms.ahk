@@ -45,6 +45,25 @@ AssertEqual("IPv4 preserved", LintText("192.168.1.1"), "192.168.1.1")
 AssertEqual("time preserved", LintText("12:30"), "12:30")
 AssertEqual("prose punctuation spacing retained", LintText("hello!world"), "hello! world")
 
+; Issue #2: preserve email local-part casing while normalizing domain and spaces.
+AssertEqual("email local part casing preserved", NormalizeEmails("User.Name @ Example . COM"), "User.Name@example.com")
+AssertEqual("normalized email remains stable", NormalizeEmails("User.Name@example.com"), "User.Name@example.com")
+AssertEqual("lint preserves normalized email local part", LintText("User.Name @ Example . COM"), "User.Name@example.com")
+
+; Issue #3: emoji removal must not erase ordinary typographic symbols.
+AssertEqual("check mark preserved by emoji cleanup", RemoveEmoji("✓"), "✓")
+AssertEqual("arrow preserved by emoji cleanup", RemoveEmoji("→"), "→")
+AssertEqual("star preserved by emoji cleanup", RemoveEmoji("★"), "★")
+AssertEqual("supplementary emoji removed", RemoveEmoji("A😀B"), "AB")
+AssertEqual("ZWJ emoji sequence removed", RemoveEmoji("A👩‍💻B"), "AB")
+AssertEqual("lint preserves ordinary symbols", LintText("✓ → ★"), "✓ → ★")
+
+; Issue #6: only explicit Russian phone forms should be coerced to +7.
+AssertEqual("Russian +7 phone normalized", NormalizePhones("+7 999 123 45 67"), "+7 (999) 123-45-67")
+AssertEqual("Russian leading 8 phone normalized", NormalizePhones("8 (999) 123-45-67"), "+7 (999) 123-45-67")
+AssertEqual("ambiguous 10 digit groups preserved", NormalizePhones("415 555 12 34"), "415 555 12 34")
+AssertEqual("unprefixed Russian-looking groups preserved", NormalizePhones("999 123 45 67"), "999 123 45 67")
+
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
 if Failures > 0 {
