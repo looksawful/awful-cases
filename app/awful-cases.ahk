@@ -70,26 +70,38 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Exit", (*) => ExitApp())
 }
 RegisterHotkeys() {
-RegisterHotkey("Upper", "Up", "upper")
-RegisterHotkey("Lower", "Down", "lower")
-RegisterHotkey("Toggle", "Right", "toggle")
-RegisterHotkey("Title", "Left", "title")
-RegisterHotkey("Lint", "PgDn", "lint")
-RegisterHotkey("Sentence", "Delete", "sentence")
-key := ReadKey("Settings", "Home")
-TryRegister("^!+" . key, (*) => ShowSettingsGui(), "^!+Home")
+assignments := GetConfiguredHotkeyAssignments()
+duplicate := FindDuplicateHotkey(assignments)
+if duplicate != "" {
+ShowToast("Duplicate hotkey: Ctrl + Alt + Shift + " . duplicate)
+return
 }
-RegisterHotkey(name, defaultKey, mode) {
-key := ReadKey(name, defaultKey)
-TryRegister("^!+" . key, (*) => TransformSelectedText(mode), "^!+" . defaultKey)
+TryRegister("^!+" . assignments["Upper"], (*) => TransformSelectedText("upper"))
+TryRegister("^!+" . assignments["Lower"], (*) => TransformSelectedText("lower"))
+TryRegister("^!+" . assignments["Toggle"], (*) => TransformSelectedText("toggle"))
+TryRegister("^!+" . assignments["Title"], (*) => TransformSelectedText("title"))
+TryRegister("^!+" . assignments["Lint"], (*) => TransformSelectedText("lint"))
+TryRegister("^!+" . assignments["Sentence"], (*) => TransformSelectedText("sentence"))
+TryRegister("^!+" . assignments["Settings"], (*) => ShowSettingsGui())
 }
-TryRegister(hotkeyString, callback, fallbackHotkey := "") {
+GetConfiguredHotkeyAssignments() {
+return Map(
+"Upper", ReadKey("Upper", "Up"),
+"Lower", ReadKey("Lower", "Down"),
+"Toggle", ReadKey("Toggle", "Right"),
+"Title", ReadKey("Title", "Left"),
+"Lint", ReadKey("Lint", "PgDn"),
+"Sentence", ReadKey("Sentence", "Delete"),
+"Settings", ReadKey("Settings", "Home")
+)
+}
+TryRegister(hotkeyString, callback) {
 try {
 Hotkey(hotkeyString, callback)
-} catch {
-if fallbackHotkey != "" {
-try Hotkey(fallbackHotkey, callback)
-}
+return true
+} catch as err {
+ShowToast("Cannot register hotkey: " . hotkeyString)
+return false
 }
 }
 ReadKey(name, defaultKey) {
@@ -133,7 +145,7 @@ return
 }
 }
 ShowSettingsGui() {
-global ConfigPath
+global ConfigPath, AllowedFinalHotkeyKeys
 lang := GetUiLang()
 isRu := lang = "ru"
 bg := "0F1411"
@@ -174,10 +186,7 @@ hotkeys := [
 ["Sentence", isRu ? "Типографика предложений" : "Sentence typography",  "Delete"],
 ["Settings", isRu ? "Открыть настройки"     : "Open settings",       "Home"]
 ]
-keyChoices := ["Up", "Down", "Left", "Right", "Home", "End", "PgUp", "PgDn", "Tab", "Backspace", "Delete", "Insert"
-, "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
-, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
-, "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"]
+keyChoices := AllowedFinalHotkeyKeys
 captureLabel := isRu ? "Нажмите клавишу..." : "Press a key..."
 captureBtnLabel := isRu ? "Захват" : "Capture"
 g.SetFont("s13 c" . fg, "Segoe UI")
@@ -273,13 +282,22 @@ state["thumb"].Move(thumbX, y + 4)
 SaveSettingsGui(g, hotkeyControls, featureControls, langDdl) {
 global ConfigPath
 newLang := langDdl.Text = "RU" ? "ru" : "en"
-IniWrite(newLang, ConfigPath, "Ui", "Language")
+assignments := Map()
 for key, control in hotkeyControls {
 value := control.Text
 if !IsAllowedFinalHotkeyKey(value) {
 ShowToast("Unsupported key: " . value)
 return
 }
+assignments[key] := value
+}
+duplicate := FindDuplicateHotkey(assignments)
+if duplicate != "" {
+ShowToast("Duplicate hotkey: Ctrl + Alt + Shift + " . duplicate)
+return
+}
+IniWrite(newLang, ConfigPath, "Ui", "Language")
+for key, value in assignments {
 IniWrite(value, ConfigPath, "Hotkeys", key)
 }
 for key, control in featureControls {
@@ -358,6 +376,20 @@ return true
 }
 return false
 }
+FindDuplicateHotkey(assignments) {
+seen := Map()
+for name, value in assignments {
+key := CanonicalizeKeyName(value)
+if key = "" {
+continue
+}
+if seen.Has(key) {
+return key
+}
+seen[key] := name
+}
+return ""
+}
 ResetToDefaults() {
 global ConfigPath
 try FileDelete(ConfigPath)
@@ -367,9 +399,6 @@ Sleep 300
 Reload()
 }
 ResetSettingsInPlace(hotkeyControls, featureControls, langDdl, keyChoices) {
-global ConfigPath
-try FileDelete(ConfigPath)
-FileAppend(GetDefaultConfig(), ConfigPath, "UTF-8")
 defaults := Map(
 "Upper", "Up", "Lower", "Down", "Toggle", "Right",
 "Title", "Left", "Lint", "PgDn", "Sentence", "Delete", "Settings", "Home"
@@ -426,7 +455,7 @@ return
 A_Clipboard := changedText
 Sleep 60
 Send "^v"
-Sleep 120
+Sleep 500
 try A_Clipboard := savedClipboard
 ShowToast(message)
 }
@@ -588,7 +617,8 @@ text := RegExReplace(text, "[ \t" . Chr(160) . "]{2,}", " ")
 }
 if FeatureEnabled("FixPunctuation") {
 text := RegExReplace(text, "[ \t" . Chr(160) . "]+([.,:;!?])", "$1")
-text := RegExReplace(text, "([.,:;!?])([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
+text := RegExReplace(text, "([;!?])([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
+text := RegExReplace(text, "([.,:])(?!\d)([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
 }
 if FeatureEnabled("FixShortWords") {
 text := FixShortWordSpaces(text)
@@ -608,7 +638,7 @@ NormalizeEmails(text) {
 pos := 1
 while RegExMatch(text, "i)([A-Z0-9._%+\-]+)\s*@\s*([A-Z0-9.\-]+)\s*\.\s*([A-Z]{2,})", &m, pos) {
 original := m[0]
-normalized := StrLower(m[1] . "@" . m[2] . "." . m[3])
+normalized := m[1] . "@" . StrLower(m[2] . "." . m[3])
 text := SubStr(text, 1, m.Pos - 1) . normalized . SubStr(text, m.Pos + StrLen(original))
 pos := m.Pos + StrLen(normalized)
 }
@@ -616,12 +646,8 @@ return text
 }
 NormalizePhones(text) {
 pos := 1
-while RegExMatch(text, "(?<!\d)(?:\+7|8)?[ \t" . Chr(160) . "\(\).-]*(\d{3})[ \t" . Chr(160) . "\).-]*(\d{3})[ \t" . Chr(160) . ".-]*(\d{2})[ \t" . Chr(160) . ".-]*(\d{2})(?!\d)", &m, pos) {
+while RegExMatch(text, "(?<!\d)(?:\+7|8)[ \t" . Chr(160) . "\(\).-]*(\d{3})[ \t" . Chr(160) . "\).-]*(\d{3})[ \t" . Chr(160) . ".-]*(\d{2})[ \t" . Chr(160) . ".-]*(\d{2})(?!\d)", &m, pos) {
 original := m[0]
-if !(InStr(original, "+7") || RegExMatch(original, "^8") || InStr(original, "(") || InStr(original, "-") || InStr(original, " ")) {
-pos := m.Pos + StrLen(original)
-continue
-}
 normalized := "+7 (" . m[1] . ") " . m[2] . "-" . m[3] . "-" . m[4]
 text := SubStr(text, 1, m.Pos - 1) . normalized . SubStr(text, m.Pos + StrLen(original))
 pos := m.Pos + StrLen(normalized)
@@ -731,12 +757,11 @@ text := RegExReplace(text, "i)\b(e|web|ui|ux|seo|smm|it|hr|pr|vip|pdf|psd|figma|
 return text
 }
 RemoveEmoji(text) {
-text := RegExReplace(text, "[\x{1F000}-\x{1FAFF}]", "")
-text := RegExReplace(text, "[\x{2600}-\x{27BF}]", "")
-text := RegExReplace(text, "[\x{FE00}-\x{FE0F}]", "")
-text := RegExReplace(text, "[\x{1F3FB}-\x{1F3FF}]", "")
-text := StrReplace(text, Chr(8205), "")
-return text
+emoji := "[\x{1F000}-\x{1FAFF}]"
+modifier := "[\x{1F3FB}-\x{1F3FF}]"
+variation := "[\x{FE0E}\x{FE0F}]"
+sequence := emoji . "(?:" . modifier . "|" . variation . ")?(?:\x{200D}" . emoji . "(?:" . modifier . "|" . variation . ")?)*"
+return RegExReplace(text, sequence, "")
 }
 
 OpenConfig() {
