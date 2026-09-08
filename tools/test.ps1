@@ -33,8 +33,8 @@ if (-not $AutoHotkeyPath -or -not (Test-Path $AutoHotkeyPath)) {
 Write-Host "AutoHotkey: $AutoHotkeyPath"
 Write-Host "Tests:       $testFile"
 
-& $AutoHotkeyPath /ErrorStdOut $testFile
-$exitCode = $LASTEXITCODE
+$process = Start-Process -FilePath $AutoHotkeyPath -ArgumentList @('/ErrorStdOut', $testFile) -Wait -PassThru -NoNewWindow
+$exitCode = $process.ExitCode
 
 if ($exitCode -ne 0) {
     throw "Awful Cases tests failed with exit code $exitCode."
