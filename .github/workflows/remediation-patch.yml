@@ -1,0 +1,293 @@
+name: Temporary remediation patch
+
+on:
+  push:
+    branches:
+      - fix/audit-remediation-20260909
+    paths:
+      - .github/workflows/remediation-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout remediation branch
+        uses: actions/checkout@v7
+        with:
+          ref: fix/audit-remediation-20260909
+
+      - name: Apply focused runtime fixes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = 'app/awful-cases.ahk'
+          $text = Get-Content -LiteralPath $path -Raw
+
+          function Replace-Exact([string]$label, [string]$old, [string]$new) {
+            if (-not $script:text.Contains($old)) {
+              throw "Patch target not found: $label"
+            }
+            $script:text = $script:text.Replace($old, $new)
+          }
+
+          $old = @'
+          RegisterHotkeys() {
+          RegisterHotkey("Upper", "Up", "upper")
+          RegisterHotkey("Lower", "Down", "lower")
+          RegisterHotkey("Toggle", "Right", "toggle")
+          RegisterHotkey("Title", "Left", "title")
+          RegisterHotkey("Lint", "PgDn", "lint")
+          RegisterHotkey("Sentence", "Delete", "sentence")
+          key := ReadKey("Settings", "Home")
+          TryRegister("^!+" . key, (*) => ShowSettingsGui(), "^!+Home")
+          }
+          RegisterHotkey(name, defaultKey, mode) {
+          key := ReadKey(name, defaultKey)
+          TryRegister("^!+" . key, (*) => TransformSelectedText(mode), "^!+" . defaultKey)
+          }
+          TryRegister(hotkeyString, callback, fallbackHotkey := "") {
+          try {
+          Hotkey(hotkeyString, callback)
+          } catch {
+          if fallbackHotkey != "" {
+          try Hotkey(fallbackHotkey, callback)
+          }
+          }
+          }
+'@
+          $new = @'
+          RegisterHotkeys() {
+          assignments := GetConfiguredHotkeyAssignments()
+          duplicate := FindDuplicateHotkey(assignments)
+          if duplicate != "" {
+          ShowToast("Duplicate hotkey: Ctrl + Alt + Shift + " . duplicate)
+          return
+          }
+          TryRegister("^!+" . assignments["Upper"], (*) => TransformSelectedText("upper"))
+          TryRegister("^!+" . assignments["Lower"], (*) => TransformSelectedText("lower"))
+          TryRegister("^!+" . assignments["Toggle"], (*) => TransformSelectedText("toggle"))
+          TryRegister("^!+" . assignments["Title"], (*) => TransformSelectedText("title"))
+          TryRegister("^!+" . assignments["Lint"], (*) => TransformSelectedText("lint"))
+          TryRegister("^!+" . assignments["Sentence"], (*) => TransformSelectedText("sentence"))
+          TryRegister("^!+" . assignments["Settings"], (*) => ShowSettingsGui())
+          }
+          GetConfiguredHotkeyAssignments() {
+          return Map(
+          "Upper", ReadKey("Upper", "Up"),
+          "Lower", ReadKey("Lower", "Down"),
+          "Toggle", ReadKey("Toggle", "Right"),
+          "Title", ReadKey("Title", "Left"),
+          "Lint", ReadKey("Lint", "PgDn"),
+          "Sentence", ReadKey("Sentence", "Delete"),
+          "Settings", ReadKey("Settings", "Home")
+          )
+          }
+          TryRegister(hotkeyString, callback) {
+          try {
+          Hotkey(hotkeyString, callback)
+          return true
+          } catch as err {
+          ShowToast("Cannot register hotkey: " . hotkeyString)
+          return false
+          }
+          }
+'@
+          Replace-Exact 'hotkey registration' $old $new
+
+          Replace-Exact 'settings global key choices' 'global ConfigPath`r`nlang := GetUiLang()' 'global ConfigPath, AllowedFinalHotkeyKeys`r`nlang := GetUiLang()'
+
+          $old = @'
+          keyChoices := ["Up", "Down", "Left", "Right", "Home", "End", "PgUp", "PgDn", "Tab", "Backspace", "Delete", "Insert"
+          , "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+          , "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+          , "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"]
+'@
+          Replace-Exact 'GUI allowed-key list' $old 'keyChoices := AllowedFinalHotkeyKeys`r`n'
+
+          $old = @'
+          SaveSettingsGui(g, hotkeyControls, featureControls, langDdl) {
+          global ConfigPath
+          newLang := langDdl.Text = "RU" ? "ru" : "en"
+          IniWrite(newLang, ConfigPath, "Ui", "Language")
+          for key, control in hotkeyControls {
+          value := control.Text
+          if !IsAllowedFinalHotkeyKey(value) {
+          ShowToast("Unsupported key: " . value)
+          return
+          }
+          IniWrite(value, ConfigPath, "Hotkeys", key)
+          }
+          for key, control in featureControls {
+          IniWrite(control.Value, ConfigPath, "Features", key)
+          }
+          ShowToast("Settings saved")
+          Sleep 300
+          Reload()
+          }
+'@
+          $new = @'
+          SaveSettingsGui(g, hotkeyControls, featureControls, langDdl) {
+          global ConfigPath
+          newLang := langDdl.Text = "RU" ? "ru" : "en"
+          assignments := Map()
+          for key, control in hotkeyControls {
+          value := control.Text
+          if !IsAllowedFinalHotkeyKey(value) {
+          ShowToast("Unsupported key: " . value)
+          return
+          }
+          assignments[key] := value
+          }
+          duplicate := FindDuplicateHotkey(assignments)
+          if duplicate != "" {
+          ShowToast("Duplicate hotkey: Ctrl + Alt + Shift + " . duplicate)
+          return
+          }
+          IniWrite(newLang, ConfigPath, "Ui", "Language")
+          for key, value in assignments {
+          IniWrite(value, ConfigPath, "Hotkeys", key)
+          }
+          for key, control in featureControls {
+          IniWrite(control.Value, ConfigPath, "Features", key)
+          }
+          ShowToast("Settings saved")
+          Sleep 300
+          Reload()
+          }
+'@
+          Replace-Exact 'settings atomic validation' $old $new
+
+          $old = @'
+          IsAllowedFinalHotkeyKey(value) {
+          global AllowedFinalHotkeyKeys
+          if value = "" {
+          return false
+          }
+          for k in AllowedFinalHotkeyKeys {
+          if (k = value) {
+          return true
+          }
+          }
+          return false
+          }
+'@
+          $new = @'
+          IsAllowedFinalHotkeyKey(value) {
+          global AllowedFinalHotkeyKeys
+          if value = "" {
+          return false
+          }
+          for k in AllowedFinalHotkeyKeys {
+          if (k = value) {
+          return true
+          }
+          }
+          return false
+          }
+          FindDuplicateHotkey(assignments) {
+          seen := Map()
+          for name, value in assignments {
+          key := CanonicalizeKeyName(value)
+          if key = "" {
+          continue
+          }
+          if seen.Has(key) {
+          return key
+          }
+          seen[key] := name
+          }
+          return ""
+          }
+'@
+          Replace-Exact 'duplicate hotkey helper' $old $new
+
+          $old = @'
+          ResetSettingsInPlace(hotkeyControls, featureControls, langDdl, keyChoices) {
+          global ConfigPath
+          try FileDelete(ConfigPath)
+          FileAppend(GetDefaultConfig(), ConfigPath, "UTF-8")
+'@
+          $new = @'
+          ResetSettingsInPlace(hotkeyControls, featureControls, langDdl, keyChoices) {
+'@
+          Replace-Exact 'non-destructive settings reset' $old $new
+
+          Replace-Exact 'clipboard restore delay' 'Sleep 120`r`ntry A_Clipboard := savedClipboard' 'Sleep 500`r`ntry A_Clipboard := savedClipboard'
+
+          $old = @'
+          text := RegExReplace(text, "[ \t" . Chr(160) . "]+([.,:;!?])", "$1")
+          text := RegExReplace(text, "([.,:;!?])([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
+'@
+          $new = @'
+          text := RegExReplace(text, "[ \t" . Chr(160) . "]+([.,:;!?])", "$1")
+          text := RegExReplace(text, "([;!?])([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
+          text := RegExReplace(text, "([.,:])(?!\d)([^\s`r`n\)\]\}»”.,:;!?…])", "$1 $2")
+'@
+          Replace-Exact 'structured punctuation preservation' $old $new
+
+          Replace-Exact 'email local-part casing' 'normalized := StrLower(m[1] . "@" . m[2] . "." . m[3])' 'normalized := m[1] . "@" . StrLower(m[2] . "." . m[3])'
+
+          $old = @'
+          NormalizePhones(text) {
+          pos := 1
+          while RegExMatch(text, "(?<!\d)(?:\+7|8)?[ \t" . Chr(160) . "\(\).-]*(\d{3})[ \t" . Chr(160) . "\).-]*(\d{3})[ \t" . Chr(160) . ".-]*(\d{2})[ \t" . Chr(160) . ".-]*(\d{2})(?!\d)", &m, pos) {
+          original := m[0]
+          if !(InStr(original, "+7") || RegExMatch(original, "^8") || InStr(original, "(") || InStr(original, "-") || InStr(original, " ")) {
+          pos := m.Pos + StrLen(original)
+          continue
+          }
+          normalized := "+7 (" . m[1] . ") " . m[2] . "-" . m[3] . "-" . m[4]
+          text := SubStr(text, 1, m.Pos - 1) . normalized . SubStr(text, m.Pos + StrLen(original))
+          pos := m.Pos + StrLen(normalized)
+          }
+          return text
+          }
+'@
+          $new = @'
+          NormalizePhones(text) {
+          pos := 1
+          while RegExMatch(text, "(?<!\d)(?:\+7|8)[ \t" . Chr(160) . "\(\).-]*(\d{3})[ \t" . Chr(160) . "\).-]*(\d{3})[ \t" . Chr(160) . ".-]*(\d{2})[ \t" . Chr(160) . ".-]*(\d{2})(?!\d)", &m, pos) {
+          original := m[0]
+          normalized := "+7 (" . m[1] . ") " . m[2] . "-" . m[3] . "-" . m[4]
+          text := SubStr(text, 1, m.Pos - 1) . normalized . SubStr(text, m.Pos + StrLen(original))
+          pos := m.Pos + StrLen(normalized)
+          }
+          return text
+          }
+'@
+          Replace-Exact 'phone normalization scope' $old $new
+
+          $old = @'
+          RemoveEmoji(text) {
+          text := RegExReplace(text, "[\x{1F000}-\x{1FAFF}]", "")
+          text := RegExReplace(text, "[\x{2600}-\x{27BF}]", "")
+          text := RegExReplace(text, "[\x{FE00}-\x{FE0F}]", "")
+          text := RegExReplace(text, "[\x{1F3FB}-\x{1F3FF}]", "")
+          text := StrReplace(text, Chr(8205), "")
+          return text
+          }
+'@
+          $new = @'
+          RemoveEmoji(text) {
+          emoji := "[\x{1F000}-\x{1FAFF}]"
+          modifier := "[\x{1F3FB}-\x{1F3FF}]"
+          variation := "[\x{FE0E}\x{FE0F}]"
+          sequence := emoji . "(?:" . modifier . "|" . variation . ")?(?:\x{200D}" . emoji . "(?:" . modifier . "|" . variation . ")?)*"
+          return RegExReplace(text, sequence, "")
+          }
+'@
+          Replace-Exact 'emoji cleanup scope' $old $new
+
+          Set-Content -LiteralPath $path -Value $text -Encoding utf8 -NoNewline
+
+      - name: Commit patched runtime
+        shell: pwsh
+        run: |
+          git config user.name "awful-cases-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/awful-cases.ahk
+          git commit -m "fix: remediate audited runtime defects"
+          git push origin HEAD:fix/audit-remediation-20260909
