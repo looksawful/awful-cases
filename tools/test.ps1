@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$testFile = Join-Path $repoRoot 'tests\text-transforms.ahk'
+$testFiles = Get-ChildItem (Join-Path $repoRoot 'tests') -Filter '*.ahk' | Sort-Object Name
 
 if (-not $AutoHotkeyPath) {
     $candidates = @(
@@ -30,14 +30,24 @@ if (-not $AutoHotkeyPath -or -not (Test-Path $AutoHotkeyPath)) {
     throw 'AutoHotkey v2 was not found. Install AutoHotkey v2 or pass -AutoHotkeyPath <path-to-exe>.'
 }
 
-Write-Host "AutoHotkey: $AutoHotkeyPath"
-Write-Host "Tests:       $testFile"
-
-$process = Start-Process -FilePath $AutoHotkeyPath -ArgumentList @('/ErrorStdOut', $testFile) -Wait -PassThru -NoNewWindow
-$exitCode = $process.ExitCode
-
-if ($exitCode -ne 0) {
-    throw "Awful Cases tests failed with exit code $exitCode."
+if ($testFiles.Count -eq 0) {
+    throw 'No AutoHotkey tests were found in tests/.'
 }
 
-Write-Host 'Awful Cases tests passed.'
+Write-Host "AutoHotkey: $AutoHotkeyPath"
+Write-Host "Test files: $($testFiles.Count)"
+
+$failedTests = @()
+foreach ($testFile in $testFiles) {
+    Write-Host "`n==> $($testFile.Name)"
+    $process = Start-Process -FilePath $AutoHotkeyPath -ArgumentList @('/ErrorStdOut', $testFile.FullName) -Wait -PassThru -NoNewWindow
+    if ($process.ExitCode -ne 0) {
+        $failedTests += "$($testFile.Name) (exit $($process.ExitCode))"
+    }
+}
+
+if ($failedTests.Count -gt 0) {
+    throw "Awful Cases tests failed: $($failedTests -join ', ')."
+}
+
+Write-Host "`nAll Awful Cases tests passed."

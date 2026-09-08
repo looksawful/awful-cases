@@ -20,18 +20,21 @@ jobs:
         shell: pwsh
         run: pwsh -File tests/repo-contract.ps1
 
-      - name: Install AutoHotkey v2
+      - name: Install AutoHotkey v2.0.27
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $headers = @{ 'User-Agent' = 'awful-cases-ci' }
-          $release = Invoke-RestMethod -Headers $headers 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
-          $asset = $release.assets | Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } | Select-Object -First 1
-          if (-not $asset) { throw 'AutoHotkey v2 ZIP asset was not found in the latest release.' }
-
+          $version = '2.0.27'
+          $expectedSha256 = 'F72CAD4B98A7B5AA050B35D6DEAA0B0E3949929B2AAFF7D0D69858F1F380B3EF'
           $zip = Join-Path $env:RUNNER_TEMP 'autohotkey.zip'
           $dir = Join-Path $env:RUNNER_TEMP 'autohotkey'
-          Invoke-WebRequest -Headers $headers -Uri $asset.browser_download_url -OutFile $zip
+          $uri = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v$version/AutoHotkey_$version.zip"
+
+          Invoke-WebRequest -Uri $uri -OutFile $zip
+          $actualSha256 = (Get-FileHash -Path $zip -Algorithm SHA256).Hash
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "AutoHotkey archive SHA256 mismatch: $actualSha256"
+          }
           Expand-Archive -Path $zip -DestinationPath $dir -Force
 
           $exe = Get-ChildItem $dir -Recurse -Filter 'AutoHotkey64.exe' | Select-Object -First 1

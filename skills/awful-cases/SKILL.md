@@ -7,32 +7,42 @@ description: Use when reviewing, testing, fixing, or extending the Awful Cases A
 
 ## Start here
 
-Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, and relevant open issues. Treat the application source as authoritative for current behavior and the issue tracker as authoritative for known defects that have not been fixed yet.
+Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, `app/lib/text-transforms.ahk`, and relevant open issues. Treat the application/core source as authoritative for current behavior and the issue tracker as authoritative for known defects that have not been fixed yet.
 
 ## Workflow
 
-1. Identify whether the change affects text transforms, settings/hotkeys, clipboard integration, UI, or the public docs page.
-2. Reproduce the behavior with the smallest text sample possible.
-3. Add or update a regression test before changing a text transformation.
-4. Make the smallest behavior-preserving implementation change.
-5. Run `pwsh -File tools/test.ps1`.
-6. Review the diff specifically for structured-text corruption, clipboard restoration, config drift, and accidental edits to `docs/index.html`.
-7. For releases, verify `VERSION`, `AppVersion`, README behavior, and packaged defaults agree.
+1. Identify whether the change affects pure text transforms, settings/hotkeys, clipboard/keyboard integration, UI, or the public docs page.
+2. Reproduce the behavior with the smallest input possible.
+3. Add or update a regression test before changing application behavior.
+4. Keep deterministic transformations in `app/lib/text-transforms.ahk`; keep Windows side effects in `app/awful-cases.ahk`.
+5. Make the smallest implementation change that resolves the reproduced defect.
+6. Run `pwsh -File tools/test.ps1` and repository contracts.
+7. Review the diff specifically for structured-text corruption, clipboard preservation, config drift, and accidental edits to `docs/index.html`.
+8. For releases, verify `VERSION`, `AppVersion`, README behavior, changelog, and packaged defaults agree.
 
 ## Text-transform safety
 
-Typography cleanup is destructive by nature, so assume every broad regex is guilty until proven otherwise. Test punctuation rules against decimals, version numbers, IP addresses, URLs, email addresses, paths, code, dates, times, ranges, and ordinary Russian/English prose as applicable.
+Typography cleanup is destructive by nature, so assume every broad regex is guilty until proven otherwise. Test punctuation rules against decimals, version numbers, IP addresses, URLs, email addresses, paths, code, dates, times, ratios, ranges, and ordinary Russian/English prose as applicable.
 
-Protected fragments must round-trip exactly after any explicitly enabled normalization that intentionally runs before protection. In particular, `FixEmails` currently normalizes email text before the protection pass. Do not solve a protection bug by broadly exempting arbitrary text unless the exemption has a clear grammar and tests.
+Protected fragments must round-trip exactly after any explicitly enabled normalization that intentionally runs before protection. `FixEmails` normalizes email text before the protection pass. Protection rules may overlap, so restoration must remain safe when one protected fragment contains another candidate fragment.
+
+## Clipboard and insertion
+
+The clipboard is used only to capture the selected text. Restore the user's `ClipboardAll()` before sending the replacement text. Do not reintroduce a transformed-text clipboard paste followed by a fixed delay, because restoration can race slow paste consumers. Current output uses `SendText` deliberately for correctness.
 
 ## Hotkeys and settings
 
-The user-configurable final key and the GUI choices must describe the same allowed set. Validate duplicate shortcuts before registering or saving them. Do not silently swallow a configuration error when the user can reasonably correct it.
+The user-configurable final key and the GUI choices share `AllowedFinalHotkeyKeys`. Validate duplicate shortcuts before registering or saving them. Do not silently swallow a configuration error when the user can reasonably correct it. Settings Reset stages defaults in the GUI and persistence happens only on Save.
 
-## Architecture direction
+## Architecture
 
-The long-term boundary should separate pure text transformations from Windows/UI side effects. Prefer small extraction steps backed by tests rather than a one-shot rewrite of the current single-file application.
+The side-effect boundary already exists:
+
+- `app/lib/text-transforms.ahk`: pure/configuration-parameterized transforms;
+- `app/awful-cases.ahk`: config, tray, GUI, hotkeys, clipboard capture and text insertion.
+
+Preserve this boundary. Do not copy transform implementations back into the Windows shell and do not move Windows state into the pure core.
 
 ## Done criteria
 
-A change is done only when the affected behavior has an automated test, the Windows test command passes, known safety invariants still hold, and documentation is updated if user-visible behavior changed.
+A change is done only when the affected behavior has an automated regression/contract test where practical, Windows CI passes on the final commit, known safety invariants still hold, and documentation is updated when behavior or architecture changes.

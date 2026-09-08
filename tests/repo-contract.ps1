@@ -95,6 +95,19 @@ if ($duplicateDefaults.Count -gt 0) {
     Fail "default hotkeys are not unique: $(($duplicateDefaults | ForEach-Object Name) -join ', ')"
 }
 
+# The clipboard is allowed for capturing the selection, but not as the output transport.
+# Restore the user's ClipboardAll before sending replacement text so a slow paste target
+# cannot race restoration of the previous clipboard contents.
+if ($source -match 'A_Clipboard\s*:=\s*changedText') {
+    Fail 'TransformSelectedText still uses the clipboard as the output transport'
+}
+if ($source -notmatch 'SendText\s+changedText') {
+    Fail 'TransformSelectedText must insert replacement text with SendText'
+}
+if ($source -notmatch 'try\s+A_Clipboard\s*:=\s*savedClipboard\s*\r?\n\s*SendText\s+changedText') {
+    Fail 'the original clipboard must be restored immediately before SendText'
+}
+
 Write-Host 'Repository contracts passed.'
 Write-Host "Version: $version"
 Write-Host "Default hotkeys: $($hotkeys.Count)"
