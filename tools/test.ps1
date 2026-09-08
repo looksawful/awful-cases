@@ -37,12 +37,17 @@ if ($testFiles.Count -eq 0) {
 Write-Host "AutoHotkey: $AutoHotkeyPath"
 Write-Host "Test files: $($testFiles.Count)"
 
+$failedTests = @()
 foreach ($testFile in $testFiles) {
     Write-Host "`n==> $($testFile.Name)"
     $process = Start-Process -FilePath $AutoHotkeyPath -ArgumentList @('/ErrorStdOut', $testFile.FullName) -Wait -PassThru -NoNewWindow
     if ($process.ExitCode -ne 0) {
-        throw "Awful Cases test '$($testFile.Name)' failed with exit code $($process.ExitCode)."
+        $failedTests += "$($testFile.Name) (exit $($process.ExitCode))"
     }
+}
+
+if ($failedTests.Count -gt 0) {
+    throw "Awful Cases tests failed: $($failedTests -join ', ')."
 }
 
 Write-Host "`nAll Awful Cases tests passed."
