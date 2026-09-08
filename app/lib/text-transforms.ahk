@@ -306,8 +306,14 @@ return protected
 }
 
 RestoreFragments(text, protected) {
+Loop protected.Count {
+before := text
 for token, value in protected {
 text := StrReplace(text, token, value)
+}
+if (text == before) {
+break
+}
 }
 return text
 }
