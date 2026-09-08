@@ -20,18 +20,14 @@ jobs:
         shell: pwsh
         run: pwsh -File tests/repo-contract.ps1
 
-      - name: Install AutoHotkey v2
+      - name: Install AutoHotkey 2.0.27
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $headers = @{ 'User-Agent' = 'awful-cases-ci' }
-          $release = Invoke-RestMethod -Headers $headers 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
-          $asset = $release.assets | Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } | Select-Object -First 1
-          if (-not $asset) { throw 'AutoHotkey v2 ZIP asset was not found in the latest release.' }
-
+          $url = 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.27/AutoHotkey_2.0.27.zip'
           $zip = Join-Path $env:RUNNER_TEMP 'autohotkey.zip'
           $dir = Join-Path $env:RUNNER_TEMP 'autohotkey'
-          Invoke-WebRequest -Headers $headers -Uri $asset.browser_download_url -OutFile $zip
+          Invoke-WebRequest -Uri $url -OutFile $zip
           Expand-Archive -Path $zip -DestinationPath $dir -Force
 
           $exe = Get-ChildItem $dir -Recurse -Filter 'AutoHotkey64.exe' | Select-Object -First 1
