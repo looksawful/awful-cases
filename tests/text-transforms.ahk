@@ -5,7 +5,7 @@ global Failures := 0
 
 AssertEqual(name, actual, expected) {
     global Failures
-    if (actual = expected) {
+    if (actual == expected) {
         FileAppend("PASS  " . name . "`n", "*")
         return
     }
