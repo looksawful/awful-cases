@@ -468,11 +468,8 @@ try A_Clipboard := savedClipboard
 ShowToast("Unknown action")
 return
 }
-A_Clipboard := changedText
-Sleep 60
-Send "^v"
-Sleep 120
 try A_Clipboard := savedClipboard
+SendText changedText
 ShowToast(message)
 }
 
