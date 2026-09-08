@@ -14,7 +14,8 @@ Awful Cases is a Windows AutoHotkey v2 tray utility. The production source is `a
 ## Behavioral invariants
 
 - The clipboard must be restored after every transform, including error paths.
-- Protected URLs, email addresses, file paths, fenced code, and inline code must round-trip byte-for-byte through typography cleanup.
+- Protected URLs, file paths, fenced code, and inline code must round-trip byte-for-byte through typography cleanup.
+- Email text may change only through the explicit `FixEmails` normalization step; after that step, protection must prevent unrelated typography rules from changing it further.
 - A typography rule must not silently change machine-readable values such as decimals, versions, IP addresses, identifiers, paths, URLs, or code.
 - Existing global hotkeys must keep working unless the task explicitly changes them.
 - New text-normalization behavior requires a regression test.
@@ -47,7 +48,7 @@ CI runs the same test file on `windows-latest`.
 
 - Does the change preserve clipboard restoration?
 - Can punctuation or whitespace rules touch structured data accidentally?
-- Are protected fragments restored exactly?
+- Are protected fragments restored exactly after any explicitly enabled pre-protection normalization?
 - Are RU/EN UI behavior and configuration still coherent?
 - Are hotkeys unique and representable in both config and GUI?
 - Is every bug fix covered by a regression test?
