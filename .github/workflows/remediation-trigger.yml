@@ -1,0 +1,48 @@
+name: One-shot remediation trigger
+
+on:
+  push:
+    branches:
+      - fix/audit-remediation-20260909
+    paths:
+      - tools/remediation-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/audit-remediation-20260909
+
+      - name: Execute patch block
+        shell: pwsh
+        run: |
+          $lines = Get-Content '.github/workflows/remediation-patch.yml'
+          $start = [Array]::IndexOf($lines, '      - name: Apply focused runtime fixes')
+          if ($start -lt 0) { throw 'Patch step not found.' }
+          $run = -1
+          for ($i = $start; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -eq '        run: |') { $run = $i + 1; break }
+          }
+          if ($run -lt 0) { throw 'Patch run block not found.' }
+          $body = [System.Collections.Generic.List[string]]::new()
+          for ($i = $run; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^      - name: ') { break }
+            if ($lines[$i].Length -ge 10) { $body.Add($lines[$i].Substring(10)) } else { $body.Add('') }
+          }
+          $temp = Join-Path $env:RUNNER_TEMP 'apply-remediation.ps1'
+          Set-Content -LiteralPath $temp -Value $body -Encoding utf8
+          & $temp
+
+      - name: Commit runtime fixes
+        shell: pwsh
+        run: |
+          git config user.name "awful-cases-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/awful-cases.ahk
+          git commit -m "fix: remediate audited runtime defects"
+          git push origin HEAD:fix/audit-remediation-20260909
