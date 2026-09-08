@@ -37,6 +37,14 @@ AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+P
 AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
 AssertTrue("F24 allowed by runtime validator", IsAllowedFinalHotkeyKey("F24"))
 
+; Issue #1: punctuation cleanup must not corrupt structured numeric tokens.
+AssertEqual("decimal dot preserved", LintText("3.14"), "3.14")
+AssertEqual("decimal comma preserved", LintText("3,14"), "3,14")
+AssertEqual("semantic version preserved", LintText("v2.0.1"), "v2.0.1")
+AssertEqual("IPv4 preserved", LintText("192.168.1.1"), "192.168.1.1")
+AssertEqual("time preserved", LintText("12:30"), "12:30")
+AssertEqual("prose punctuation spacing retained", LintText("hello!world"), "hello! world")
+
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
 if Failures > 0 {
