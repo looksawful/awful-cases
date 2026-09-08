@@ -26,8 +26,15 @@ AssertTrue(name, value) {
 }
 
 AssertEqual("toggle case", ToggleCase("AbC 123"), "aBc 123")
+AssertEqual("toggle Cyrillic case", ToggleCase("ПрИвЕт"), "пРиВеТ")
 AssertEqual("title case", TitleCase("hello world"), "Hello World")
 AssertEqual("sentence capitalization", SentenceAwareParagraphTypography("hello. world"), "Hello. World")
+AssertEqual("sentence mode handles exclamation", SentenceAwareParagraphTypography("hello! world"), "Hello! World")
+AssertEqual("sentence mode handles question", SentenceAwareParagraphTypography("hello? world"), "Hello? World")
+AssertEqual("sentence mode protects URL", SentenceAwareParagraphTypography("visit https://example.com now"), "Visit https://example.com now")
+AssertEqual("sentence mode protects email", SentenceAwareParagraphTypography("mail User.Name@example.com now"), "Mail User.Name@example.com now")
+AssertEqual("sentence mode protects bare domain", SentenceAwareParagraphTypography("visit example.com now"), "Visit example.com now")
+AssertEqual("sentence mode protects Windows path", SentenceAwareParagraphTypography("open C:\Work\file.txt now"), "Open C:\Work\file.txt now")
 AssertEqual("ellipsis cleanup", LintText("hello..."), "hello…")
 AssertEqual("URL protection", LintText("https://example.com/a--b"), "https://example.com/a--b")
 AssertEqual("Windows path protection", LintText("C:\Work\my--file.txt"), "C:\Work\my--file.txt")
@@ -38,7 +45,7 @@ AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+P
 AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
 AssertTrue("F24 allowed by runtime validator", IsAllowedFinalHotkeyKey("F24"))
 
-; Regression coverage for audit issues #1, #2, #3 and #6.
+; Regression coverage for destructive cleanup bugs.
 AssertEqual("decimal dot is preserved", LintText("3.14"), "3.14")
 AssertEqual("decimal comma is preserved", LintText("3,14"), "3,14")
 AssertEqual("semantic version is preserved", LintText("v2.0.1"), "v2.0.1")
