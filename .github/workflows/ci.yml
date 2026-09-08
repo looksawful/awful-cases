@@ -16,6 +16,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Run repository contract checks
+        shell: pwsh
+        run: pwsh -File tests/repo-contract.ps1
+
       - name: Install AutoHotkey v2
         shell: pwsh
         run: |
