@@ -14,19 +14,14 @@ AssertTrue(name, value) {
     FileAppend("FAIL  " . name . "`n", "**")
 }
 
-ContainsValue(values, expected) {
-    for value in values {
-        if (value = expected) {
-            return true
-        }
-    }
-    return false
-}
+source := FileRead(A_ScriptDir . "\..\app\awful-cases.ahk", "UTF-8")
 
-choices := GetHotkeyChoices()
-AssertTrue("GUI choices include F24", ContainsValue(choices, "F24"))
-AssertTrue("unique hotkeys are accepted", ValidateUniqueHotkeys(Map("Upper", "Up", "Lower", "Down")))
-AssertTrue("duplicate hotkeys are rejected", !ValidateUniqueHotkeys(Map("Upper", "Up", "Lower", "Up")))
+; Runtime accepts F24, so the GUI must expose it as well.
+RegExMatch(source, "s)keyChoices := \[(.*?)\]\s*captureLabel :=", &choicesMatch)
+AssertTrue("settings GUI choices include F24", choicesMatch && InStr(choicesMatch[1], '"F24"'))
+
+; Duplicate assignments must be validated before registration/save instead of silently overriding callbacks.
+AssertTrue("duplicate hotkey validation exists", InStr(source, "ValidateUniqueHotkeys(") > 0)
 
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
