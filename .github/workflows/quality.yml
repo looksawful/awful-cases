@@ -1,0 +1,49 @@
+name: quality
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-contracts:
+    name: Repository contracts
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate repository contracts
+        shell: pwsh
+        run: ./tests/repo-contract.ps1
+
+  autohotkey-validate:
+    name: AutoHotkey v2 syntax
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download AutoHotkey 2.0.27
+        shell: pwsh
+        run: |
+          $url = "https://www.autohotkey.com/download/2.0/AutoHotkey_2.0.27.zip"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\autohotkey.zip"
+          Expand-Archive -Path "$env:RUNNER_TEMP\autohotkey.zip" -DestinationPath "$env:RUNNER_TEMP\autohotkey" -Force
+
+      - name: Validate script with AutoHotkey
+        shell: pwsh
+        run: |
+          $ahk = Get-ChildItem "$env:RUNNER_TEMP\autohotkey" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
+          if (-not $ahk) {
+            throw "AutoHotkey64.exe was not found in the downloaded archive"
+          }
+          & $ahk.FullName /ErrorStdOut=UTF-8 /Validate "app\awful-cases.ahk"
+          if ($LASTEXITCODE -ne 0) {
+            throw "AutoHotkey validation failed with exit code $LASTEXITCODE"
+          }
