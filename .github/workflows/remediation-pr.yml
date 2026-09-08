@@ -1,0 +1,56 @@
+name: One-shot PR remediation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/remediation-trigger.txt
+      - .github/workflows/remediation-pr.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Execute patch block
+        shell: pwsh
+        run: |
+          $source = Get-Content 'app/awful-cases.ahk' -Raw
+          if ($source -notmatch 'TryRegister\("\^!\+" \. key') {
+            Write-Host 'Runtime is already patched; nothing to do.'
+            exit 0
+          }
+          $lines = Get-Content '.github/workflows/remediation-patch.yml'
+          $start = [Array]::IndexOf($lines, '      - name: Apply focused runtime fixes')
+          if ($start -lt 0) { throw 'Patch step not found.' }
+          $run = -1
+          for ($i = $start; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -eq '        run: |') { $run = $i + 1; break }
+          }
+          if ($run -lt 0) { throw 'Patch run block not found.' }
+          $body = [System.Collections.Generic.List[string]]::new()
+          for ($i = $run; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^      - name: ') { break }
+            if ($lines[$i].Length -ge 10) { $body.Add($lines[$i].Substring(10)) } else { $body.Add('') }
+          }
+          $temp = Join-Path $env:RUNNER_TEMP 'apply-remediation.ps1'
+          Set-Content -LiteralPath $temp -Value $body -Encoding utf8
+          & $temp
+
+      - name: Commit runtime fixes
+        shell: pwsh
+        run: |
+          if (-not (git status --porcelain app/awful-cases.ahk)) { exit 0 }
+          git config user.name "awful-cases-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/awful-cases.ahk
+          git commit -m "fix: remediate audited runtime defects"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
