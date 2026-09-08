@@ -23,7 +23,7 @@ Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, and relevant open issues. 
 
 Typography cleanup is destructive by nature, so assume every broad regex is guilty until proven otherwise. Test punctuation rules against decimals, version numbers, IP addresses, URLs, email addresses, paths, code, dates, times, ranges, and ordinary Russian/English prose as applicable.
 
-Protected fragments must round-trip exactly. Do not solve a protection bug by broadly exempting arbitrary text unless the exemption has a clear grammar and tests.
+Protected fragments must round-trip exactly after any explicitly enabled normalization that intentionally runs before protection. In particular, `FixEmails` currently normalizes email text before the protection pass. Do not solve a protection bug by broadly exempting arbitrary text unless the exemption has a clear grammar and tests.
 
 ## Hotkeys and settings
 
