@@ -25,11 +25,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $version = '2.0.27'
+          $expectedSha256 = 'F72CAD4B98A7B5AA050B35D6DEAA0B0E3949929B2AAFF7D0D69858F1F380B3EF'
           $zip = Join-Path $env:RUNNER_TEMP 'autohotkey.zip'
           $dir = Join-Path $env:RUNNER_TEMP 'autohotkey'
-          $uri = "https://www.autohotkey.com/download/2.0/AutoHotkey_$version.zip"
+          $uri = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v$version/AutoHotkey_$version.zip"
 
           Invoke-WebRequest -Uri $uri -OutFile $zip
+          $actualSha256 = (Get-FileHash -Path $zip -Algorithm SHA256).Hash
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "AutoHotkey archive SHA256 mismatch: $actualSha256"
+          }
           Expand-Archive -Path $zip -DestinationPath $dir -Force
 
           $exe = Get-ChildItem $dir -Recurse -Filter 'AutoHotkey64.exe' | Select-Object -First 1
