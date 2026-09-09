@@ -19,12 +19,29 @@ function Normalize-Newlines([string]$Text) {
     (($Text -replace "`r`n", "`n") -replace "`r", "`n").Trim()
 }
 
+function Read-IniSection([string]$Text, [string]$Section) {
+    $values = [ordered]@{}
+    $insideSection = $false
+    foreach ($line in $Text -split "`n") {
+        $line = $line.TrimEnd("`r")
+        if ($line -match '^\s*\[([^\]]+)\]\s*$') {
+            $insideSection = $Matches[1] -eq $Section
+            continue
+        }
+        if ($insideSection -and $line -match '^\s*([^=]+?)\s*=\s*(.*?)\s*$') {
+            $values[$Matches[1]] = $Matches[2]
+        }
+    }
+    return $values
+}
+
 $version = (Read-Text 'VERSION').Trim()
 if ($version -notmatch '^\d+\.\d+\.\d+$') {
     Fail "VERSION must contain x.y.z, got '$version'"
 }
 
 $source = Read-Text 'app/awful-cases.ahk'
+$transformCore = Read-Text 'app/lib/text-transforms.ahk'
 $versionMatch = [regex]::Match($source, 'global\s+AppVersion\s*:=\s*"([^"]+)"')
 if (-not $versionMatch.Success) {
     Fail 'AppVersion was not found in app/awful-cases.ahk'
@@ -53,6 +70,36 @@ if ($embeddedConfig -ne $checkedInConfig) {
     Fail 'app/awful-cases.ini differs from GetDefaultConfig()'
 }
 
+$featureDefaultMatch = [regex]::Match(
+    $transformCore,
+    'GetDefaultFeatureState\(\)\s*\{\s*return\s+Map\((.*?)\)\s*\}',
+    [System.Text.RegularExpressions.RegexOptions]::Singleline
+)
+if (-not $featureDefaultMatch.Success) {
+    Fail 'could not extract GetDefaultFeatureState()'
+}
+
+$featureDefaults = [ordered]@{}
+foreach ($pair in [regex]::Matches($featureDefaultMatch.Groups[1].Value, '"([^"]+)"\s*,\s*([01])')) {
+    $featureDefaults[$pair.Groups[1].Value] = $pair.Groups[2].Value
+}
+if ($featureDefaults.Count -eq 0) {
+    Fail 'GetDefaultFeatureState() contains no parseable feature defaults'
+}
+
+$configFeatures = Read-IniSection $checkedInConfig 'Features'
+foreach ($name in $featureDefaults.Keys) {
+    if (-not $configFeatures.Contains($name)) {
+        Fail "missing [Features] entry '$name'"
+    }
+    if ([string]$configFeatures[$name] -ne [string]$featureDefaults[$name]) {
+        Fail "feature default '$name' differs between app/awful-cases.ini ($($configFeatures[$name])) and GetDefaultFeatureState() ($($featureDefaults[$name]))"
+    }
+}
+if ($configFeatures.Count -ne $featureDefaults.Count) {
+    Fail "feature default count differs between app/awful-cases.ini ($($configFeatures.Count)) and GetDefaultFeatureState() ($($featureDefaults.Count))"
+}
+
 $allowedMatch = [regex]::Match(
     $source,
     'global\s+AllowedFinalHotkeyKeys\s*:=\s*\[(.*?)\]\s*EnsureConfig\(\)',
@@ -67,19 +114,7 @@ $allowedKeys = @(
         ForEach-Object { $_.Groups[1].Value }
 )
 
-$hotkeys = [ordered]@{}
-$insideHotkeys = $false
-foreach ($line in $checkedInConfig -split "`n") {
-    $line = $line.TrimEnd("`r")
-    if ($line -match '^\s*\[([^\]]+)\]\s*$') {
-        $insideHotkeys = $Matches[1] -eq 'Hotkeys'
-        continue
-    }
-    if ($insideHotkeys -and $line -match '^\s*([^=]+?)\s*=\s*(.*?)\s*$') {
-        $hotkeys[$Matches[1]] = $Matches[2]
-    }
-}
-
+$hotkeys = Read-IniSection $checkedInConfig 'Hotkeys'
 $expectedHotkeys = @('Upper', 'Lower', 'Toggle', 'Title', 'Lint', 'Sentence', 'Settings')
 foreach ($name in $expectedHotkeys) {
     if (-not $hotkeys.Contains($name)) {
@@ -111,3 +146,4 @@ if ($source -notmatch 'try\s+A_Clipboard\s*:=\s*savedClipboard\s*\r?\n\s*SendTex
 Write-Host 'Repository contracts passed.'
 Write-Host "Version: $version"
 Write-Host "Default hotkeys: $($hotkeys.Count)"
+Write-Host "Default features: $($featureDefaults.Count)"
