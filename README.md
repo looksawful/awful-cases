@@ -78,10 +78,13 @@ The Settings dialog's Reset button stages default values in the UI. Persistent s
 Run the Windows test suite with:
 
 ```powershell
+pwsh -File tests/repo-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
 CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification.
+
+Desktop integration checks and the release gate are documented in [`docs/TESTING.md`](docs/TESTING.md). Use that matrix for clipboard/input changes and before releases rather than treating headless CI as proof of compatibility with every Windows editor.
 
 Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integration remains in `app/awful-cases.ahk`.
 
@@ -94,6 +97,7 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 | `app/awful-cases.ini`         | hotkeys and cleanup settings                 |
 | `app/awful-cases.ico`         | app icon                                     |
 | `tests/`                      | regression and repository contract tests    |
+| `docs/TESTING.md`             | desktop smoke matrix and release gate       |
 | `docs/index.html`             | checked-in GitHub Pages project/trainer page |
 
 ## Requirements
