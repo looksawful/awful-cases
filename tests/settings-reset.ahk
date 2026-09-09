@@ -26,7 +26,10 @@ FileAppend("[Ui]`nLanguage=en`n[Hotkeys]`nUpper=F13`n", testConfigPath, "UTF-8")
 ConfigPath := testConfigPath
 
 hotkeyControls := Map("Upper", FakeDropDown("F13"))
-featureControls := Map("FixDash", FakeCheckbox(0))
+featureControls := Map(
+    "FixDash", FakeCheckbox(0),
+    "RemoveEmoji", FakeCheckbox(1)
+)
 langDdl := FakeDropDown("EN")
 keyChoices := ["Up", "F13"]
 
@@ -39,4 +42,6 @@ try FileDelete(testConfigPath)
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
 AssertEqual("reset must not persist defaults before Save", actual, expected)
+AssertEqual("reset stages enabled FixDash default", featureControls["FixDash"].Value, 1)
+AssertEqual("reset stages disabled RemoveEmoji default", featureControls["RemoveEmoji"].Value, 0)
 FinishTests("settings reset tests")
