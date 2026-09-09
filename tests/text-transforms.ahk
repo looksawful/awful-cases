@@ -1,29 +1,6 @@
 #Requires AutoHotkey v2.0
-#Include ..\app\awful-cases.ahk
-
-global Failures := 0
-
-AssertEqual(name, actual, expected) {
-    global Failures
-    if (actual == expected) {
-        FileAppend("PASS  " . name . "`n", "*")
-        return
-    }
-
-    Failures += 1
-    FileAppend("FAIL  " . name . "`n  expected: " . expected . "`n  actual:   " . actual . "`n", "**")
-}
-
-AssertTrue(name, value) {
-    global Failures
-    if value {
-        FileAppend("PASS  " . name . "`n", "*")
-        return
-    }
-
-    Failures += 1
-    FileAppend("FAIL  " . name . "`n  expected truthy value`n", "**")
-}
+#Include lib\assert.ahk
+#Include ..\app\lib\text-transforms.ahk
 
 AssertEqual("toggle case", ToggleCase("AbC 123"), "aBc 123")
 AssertEqual("toggle Cyrillic case", ToggleCase("ПрИвЕт"), "пРиВеТ")
@@ -43,9 +20,6 @@ AssertEqual("UNC path protection", LintText("\\server\share\my--file.txt"), "\\s
 AssertEqual("Russian hyphenation through lint", LintText("кое - кто"), "кое‑кто")
 AssertEqual("Russian phone normalization", NormalizePhones("+7 999 123 45 67"), "+7 (999) 123-45-67")
 AssertEqual("Russian phone with leading 8", NormalizePhones("8 (999) 123-45-67"), "+7 (999) 123-45-67")
-AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+PgDn"), "PgDn")
-AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
-AssertTrue("F24 allowed by runtime validator", IsAllowedFinalHotkeyKey("F24"))
 
 ; Regression coverage for destructive cleanup bugs.
 AssertEqual("decimal dot is preserved", LintText("3.14"), "3.14")
@@ -61,12 +35,4 @@ AssertEqual("emoji ZWJ sequence is removed cleanly", RemoveEmoji("A👨‍👩�
 AssertEqual("ambiguous non-Russian phone-like value is preserved", NormalizePhones("415 555 26 71"), "415 555 26 71")
 AssertEqual("bare ten-digit number is preserved", NormalizePhones("999 123 45 67"), "999 123 45 67")
 
-try FileDelete(A_ScriptDir . "\awful-cases.ini")
-
-if Failures > 0 {
-    FileAppend("`n" . Failures . " test(s) failed.`n", "**")
-    ExitApp(1)
-}
-
-FileAppend("`nAll text transformation tests passed.`n", "*")
-ExitApp(0)
+FinishTests("text transformation tests")

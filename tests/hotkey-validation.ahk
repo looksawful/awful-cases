@@ -1,20 +1,12 @@
 #Requires AutoHotkey v2.0
+#Include lib\assert.ahk
 #Include ..\app\awful-cases.ahk
 
-global Failures := 0
-
-AssertTrue(name, value) {
-    global Failures
-    if value {
-        FileAppend("PASS  " . name . "`n", "*")
-        return
-    }
-
-    Failures += 1
-    FileAppend("FAIL  " . name . "`n", "**")
-}
-
 source := FileRead(A_ScriptDir . "\..\app\awful-cases.ahk", "UTF-8")
+
+AssertEqual("readable hotkey normalization", NormalizeKeyInput("Ctrl+Alt+Shift+PgDn"), "PgDn")
+AssertEqual("Russian keyboard hotkey normalization", NormalizeKeyInput("н"), "Y")
+AssertTrue("F24 allowed by runtime validator", IsAllowedFinalHotkeyKey("F24"))
 
 ; Runtime accepts F24, so the GUI must either reuse the shared allowed-key array
 ; or expose F24 explicitly.
@@ -27,9 +19,4 @@ AssertTrue("settings GUI choices include F24", usesSharedChoices || hasLiteralF2
 AssertTrue("duplicate hotkey validation exists", InStr(source, "ValidateUniqueHotkeys(") > 0)
 
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
-
-if Failures > 0 {
-    ExitApp(1)
-}
-
-ExitApp(0)
+FinishTests("hotkey validation tests")
