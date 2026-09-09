@@ -253,7 +253,7 @@ features := [
 ["FixSpaces",      isRu ? "Пробелы"                      : "Fix spaces"],
 ["FixShortWords",  isRu ? "NBSP у коротких слов"         : "Fix short-word NBSP"],
 ["FixPunctuation", isRu ? "Пробелы у знаков пунктуации"  : "Fix punctuation spaces"],
-["FixPhones",      isRu ? "Нормализовать телефоны"       : "Normalize phones"],
+["FixPhones",      isRu ? "Нормализовать российские телефоны" : "Normalize Russian phones"],
 ["FixEmails",      isRu ? "Нормализовать email"          : "Normalize emails"],
 ["RemoveEmoji",    isRu ? "Удалить эмодзи"               : "Remove emoji"],
 ["ProtectCode",    isRu ? "Защитить код"                 : "Protect code"],
