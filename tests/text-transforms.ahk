@@ -35,4 +35,12 @@ AssertEqual("emoji ZWJ sequence is removed cleanly", RemoveEmoji("A👨‍👩�
 AssertEqual("ambiguous non-Russian phone-like value is preserved", NormalizePhones("415 555 26 71"), "415 555 26 71")
 AssertEqual("bare ten-digit number is preserved", NormalizePhones("999 123 45 67"), "999 123 45 67")
 
+; Safer default: destructive emoji removal is opt-in for new/reset configurations.
+defaultFeatures := GetDefaultFeatureState()
+AssertEqual("emoji removal default is disabled", defaultFeatures["RemoveEmoji"], 0)
+AssertEqual("default lint preserves emoji", LintText("hello 😀 ✓"), "hello 😀 ✓")
+emojiFeatures := GetDefaultFeatureState()
+emojiFeatures["RemoveEmoji"] := 1
+AssertEqual("explicit emoji removal still works", LintText("hello 😀 ✓", emojiFeatures), "hello ✓")
+
 FinishTests("text transformation tests")

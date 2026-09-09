@@ -7,6 +7,7 @@
 - Preserved email local-part casing while normalizing domain casing.
 - Restricted phone normalization to explicit Russian `+7` / leading `8` forms instead of coercing ambiguous formatted numbers.
 - Narrowed emoji removal so ordinary typographic symbols are preserved.
+- Made emoji removal opt-in for new/reset configurations while preserving existing explicit `RemoveEmoji=1` settings.
 - Unified settings/runtime hotkey choices through F24 and reject duplicate shortcuts.
 - Made Settings Reset non-destructive until Save.
 - Protected URLs, domains, email addresses, Windows/UNC paths and code in sentence typography; added `!` and `?` sentence boundaries.

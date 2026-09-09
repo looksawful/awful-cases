@@ -46,10 +46,12 @@ The cleanup mode can normalize:
 * prose punctuation spacing without changing structured numeric values such as decimals, versions, IPv4-like values, times and ratios
 * explicit Russian phone numbers beginning with `+7` or `8`
 * email whitespace/domain casing while preserving the local-part casing
-* emoji while preserving ordinary typographic symbols such as check marks, stars and arrows
+* optional emoji removal while preserving ordinary typographic symbols such as check marks, stars and arrows
 * symbols such as ©, ® and ™
 * ellipsis
 * numbers and markers such as № and §
+
+Emoji removal is disabled for new and reset configurations. Enable `RemoveEmoji=1` in Settings or `awful-cases.ini` when that destructive cleanup is wanted. Existing configuration files that already contain `RemoveEmoji=1` keep that behavior.
 
 Protected fragments are restored after cleanup. URL/domain/email/path/code protection also applies to sentence typography so sentence capitalization does not rewrite structured fragments internally.
 

@@ -51,7 +51,7 @@ FixShortWords=1
 FixPunctuation=1
 FixPhones=1
 FixEmails=1
-RemoveEmoji=1
+RemoveEmoji=0
 ProtectCode=1
 ProtectUrls=1
 ProtectPaths=1
@@ -245,6 +245,7 @@ g.SetFont("s24 c" . accent . " Bold", "Segoe UI")
 g.AddText("xm y+30", isRu ? "Типографика" : "Typography")
 g.SetFont("s14 c" . fg, "Segoe UI")
 featureControls := Map()
+featureDefaults := GetDefaultFeatureState()
 features := [
 ["FixDash",        isRu ? "Исправить тире"               : "Fix dashes"],
 ["FixQuotes",      isRu ? "Исправить кавычки"            : "Fix quotes"],
@@ -266,7 +267,8 @@ col := 0
 for index, item in features {
 key := item[1]
 label := item[2]
-value := IniRead(ConfigPath, "Features", key, 1)
+defaultValue := featureDefaults.Has(key) ? featureDefaults[key] : 1
+value := IniRead(ConfigPath, "Features", key, defaultValue)
 xOpt := col = 0 ? "xm" : "x+" . columnGap
 yOpt := col = 0 ? (index = 1 ? "y+16" : "y+10") : "yp"
 cb := g.AddCheckbox(xOpt . " " . yOpt . " w" . checkboxColumnWidth . " h28 c" . fg, Chr(8194) . label)
@@ -418,6 +420,7 @@ Reload()
 
 ResetSettingsInPlace(hotkeyControls, featureControls, langDdl, keyChoices) {
 defaults := GetDefaultHotkeys()
+featureDefaults := GetDefaultFeatureState()
 for iniKey, ddl in hotkeyControls {
 defKey := defaults.Has(iniKey) ? defaults[iniKey] : "Up"
 for i, k in keyChoices {
@@ -428,7 +431,7 @@ break
 }
 }
 for key, cb in featureControls {
-cb.Value := 1
+cb.Value := featureDefaults.Has(key) ? featureDefaults[key] : 1
 }
 langDdl.Choose(2)
 ShowToast("Defaults staged; save to apply")
