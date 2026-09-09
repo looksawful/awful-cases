@@ -42,6 +42,16 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') {
 
 $source = Read-Text 'app/awful-cases.ahk'
 $transformCore = Read-Text 'app/lib/text-transforms.ahk'
+$testingGuide = Read-Text 'docs/TESTING.md'
+$ciWorkflow = Read-Text '.github/workflows/ci.yml'
+
+if ($testingGuide -notmatch '(?m)^##\s+Release gate\s*$') {
+    Fail 'docs/TESTING.md must define a Release gate section'
+}
+if ($ciWorkflow -match '(?mi)^\s*contents\s*:\s*write\s*$' -or $ciWorkflow -match '(?mi)^\s*permissions\s*:\s*write-all\s*$') {
+    Fail '.github/workflows/ci.yml must remain read-only for repository contents'
+}
+
 $versionMatch = [regex]::Match($source, 'global\s+AppVersion\s*:=\s*"([^"]+)"')
 if (-not $versionMatch.Success) {
     Fail 'AppVersion was not found in app/awful-cases.ahk'
@@ -147,3 +157,4 @@ Write-Host 'Repository contracts passed.'
 Write-Host "Version: $version"
 Write-Host "Default hotkeys: $($hotkeys.Count)"
 Write-Host "Default features: $($featureDefaults.Count)"
+Write-Host 'CI contents permission: read-only'
