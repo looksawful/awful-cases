@@ -11,7 +11,7 @@ return Map(
 "FixPunctuation", 1,
 "FixPhones", 1,
 "FixEmails", 1,
-"RemoveEmoji", 1,
+"RemoveEmoji", 0,
 "ProtectCode", 1,
 "ProtectUrls", 1,
 "ProtectPaths", 1,
