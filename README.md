@@ -51,6 +51,8 @@ The cleanup mode can normalize:
 * ellipsis
 * numbers and markers such as № and §
 
+Phone normalization is intentionally Russian-specific. It only rewrites explicit Russian forms beginning with `+7` or a leading `8`; unprefixed digit groups and other international formats are left unchanged. The persisted configuration key remains `FixPhones` for backward compatibility.
+
 Emoji removal is disabled for new and reset configurations. Enable `RemoveEmoji=1` in Settings or `awful-cases.ini` when that destructive cleanup is wanted. Existing configuration files that already contain `RemoveEmoji=1` keep that behavior.
 
 Protected fragments are restored after cleanup. URL/domain/email/path/code protection also applies to sentence typography so sentence capitalization does not rewrite structured fragments internally.
