@@ -32,8 +32,13 @@ AssertEqual("prose punctuation still gains a space", LintText("hello,world"), "h
 AssertEqual("email local-part casing is preserved", NormalizeEmails("User.Name @ Example . COM"), "User.Name@example.com")
 AssertEqual("ordinary symbols survive emoji removal", RemoveEmoji("✓ ★ → 😀"), "✓ ★ → ")
 AssertEqual("emoji ZWJ sequence is removed cleanly", RemoveEmoji("A👨‍👩‍👧‍👦B"), "AB")
+
+; Phone normalization is deliberately Russian-specific and requires an explicit +7 or leading 8.
 AssertEqual("ambiguous non-Russian phone-like value is preserved", NormalizePhones("415 555 26 71"), "415 555 26 71")
 AssertEqual("bare ten-digit number is preserved", NormalizePhones("999 123 45 67"), "999 123 45 67")
+AssertEqual("US +1 phone is preserved", NormalizePhones("+1 415 555 2671"), "+1 415 555 2671")
+AssertEqual("UK phone is preserved", NormalizePhones("020 7946 0958"), "020 7946 0958")
+AssertEqual("unprefixed Russian-looking groups are preserved", NormalizePhones("999 123 45 67"), "999 123 45 67")
 
 ; Safer default: destructive emoji removal is opt-in for new/reset configurations.
 defaultFeatures := GetDefaultFeatureState()
