@@ -6,6 +6,7 @@
 - Prevented typography cleanup from corrupting decimals, semantic versions, IPv4-like values, times and ratios.
 - Preserved email local-part casing while normalizing domain casing.
 - Restricted phone normalization to explicit Russian `+7` / leading `8` forms instead of coercing ambiguous formatted numbers.
+- Clarified in Settings and documentation that phone normalization is Russian-specific while keeping the `FixPhones` INI key compatible.
 - Narrowed emoji removal so ordinary typographic symbols are preserved.
 - Made emoji removal opt-in for new/reset configurations while preserving existing explicit `RemoveEmoji=1` settings.
 - Unified settings/runtime hotkey choices through F24 and reject duplicate shortcuts.
