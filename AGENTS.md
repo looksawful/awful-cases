@@ -4,13 +4,26 @@
 
 Awful Cases is a Windows AutoHotkey v2 tray utility. The Windows integration entry point is `app/awful-cases.ahk`; pure text transformations live in `app/lib/text-transforms.ahk`; default settings are in `app/awful-cases.ini`; the public project page is the large self-contained `docs/index.html`.
 
+## Discovery before creating work
+
+Before creating a branch, issue, pull request, plan, or duplicate documentation:
+
+1. Inspect existing open and recently closed pull requests for the same area.
+2. Inspect open and recently closed issues for the same defect or architectural task.
+3. Inspect existing branches when another agent may already be working on the problem.
+4. Read repository documentation and relevant project documentation, including the Awful Cases Notion/runbook material when it is available through the connected workspace.
+5. Reuse or extend existing work when it already has the correct scope instead of creating a parallel source of truth.
+
+GitHub Actions are verification/deployment infrastructure, not a remote text editor. Ordinary development workflows must not patch application source and push the result back to a development branch. Make source changes in an explicit working branch and let CI verify them.
+
 ## Read before changing code
 
 1. Read `README.md`, `app/awful-cases.ahk`, and the relevant functions in `app/lib/text-transforms.ahk`.
 2. Check open GitHub issues for known text-normalization edge cases before touching typography rules.
-3. Run `pwsh -File tools/test.ps1` before and after a change.
-4. Keep the change narrowly scoped. Do not mix website work in `docs/index.html` with application behavior unless the task explicitly requires both.
-5. Read `docs/README.md` before changing the published page.
+3. Read `docs/TESTING.md` when the change touches clipboard/input integration or a release is being prepared.
+4. Run `pwsh -File tools/test.ps1` before and after a change.
+5. Keep the change narrowly scoped. Do not mix website work in `docs/index.html` with application behavior unless the task explicitly requires both.
+6. Read `docs/README.md` before changing the published page.
 
 ## Behavioral invariants
 
@@ -29,6 +42,7 @@ The code is intentionally split at the side-effect boundary:
 - `app/awful-cases.ahk`: startup, tray, hotkey registration, settings I/O and GUI, clipboard/keyboard integration;
 - `app/lib/text-transforms.ahk`: pure or configuration-parameterized case, sentence and typography transforms;
 - `tests/*.ahk`: executable regression/characterization tests;
+- `tests/lib/assert.ahk`: shared strict test assertions;
 - `tests/repo-contract.ps1`: repository-level consistency checks;
 - `tools/test.ps1`: local Windows test runner.
 
@@ -39,12 +53,13 @@ Keep transformation logic in the pure core when it does not require Windows stat
 Run:
 
 ```powershell
+pwsh -File tests/repo-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
 The AutoHotkey tests execute the production transform core and targeted integration helpers. Tests should be deterministic and must not depend on an interactive editor window or simulated clipboard selection unless the test is explicitly an integration/manual scenario.
 
-CI runs repository contracts and the same AutoHotkey suite on `windows-latest`.
+CI runs repository contracts and the same AutoHotkey suite on `windows-latest`. The desktop smoke matrix and release gate are defined in `docs/TESTING.md`; do not claim cross-application clipboard/input verification from headless CI alone.
 
 ## Review checklist
 
@@ -55,9 +70,10 @@ CI runs repository contracts and the same AutoHotkey suite on `windows-latest`.
 - Are hotkeys unique and representable in both config and GUI?
 - Is every bug fix covered by a regression test?
 - Is `VERSION` consistent with `AppVersion` when releasing?
+- If clipboard, keyboard insertion, or hotkeys changed, was the relevant `docs/TESTING.md` desktop matrix executed before release?
 
 ## Files to treat carefully
 
 - `docs/index.html` is a self-contained checked-in GitHub Pages artifact over 1 MB. Its original external authoring/export provenance is not recoverable from repository evidence; `docs/README.md` defines the current source-of-truth and editing policy. Do not reformat it or make unrelated edits.
-- `app/awful-cases.ini` and `GetDefaultConfig()` currently duplicate defaults. Keep them synchronized until that debt is removed.
+- `app/awful-cases.ini`, `GetDefaultConfig()`, and `GetDefaultFeatureState()` describe related defaults. Repository contracts must keep them synchronized.
 - `VERSION` and `AppVersion` currently duplicate the release version. Keep them synchronized until that debt is removed.
