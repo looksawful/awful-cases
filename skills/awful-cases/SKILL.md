@@ -7,7 +7,9 @@ description: Use when reviewing, testing, fixing, or extending the Awful Cases A
 
 ## Start here
 
-Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, `app/lib/text-transforms.ahk`, and relevant open issues. Treat the application/core source as authoritative for current behavior and the issue tracker as authoritative for known defects that have not been fixed yet.
+Before creating new work, inspect existing open/recent PRs, issues, and relevant branches for the same area. Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, `app/lib/text-transforms.ahk`, and relevant project/runbook documentation available through the connected workspace. Treat the application/core source as authoritative for current behavior and the issue tracker as authoritative for known unresolved defects.
+
+Do not create a parallel issue, PR, plan, or documentation page when an existing one already has the correct scope. Extend or supersede it explicitly.
 
 ## Workflow
 
@@ -16,9 +18,14 @@ Read `AGENTS.md`, `README.md`, `app/awful-cases.ahk`, `app/lib/text-transforms.a
 3. Add or update a regression test before changing application behavior.
 4. Keep deterministic transformations in `app/lib/text-transforms.ahk`; keep Windows side effects in `app/awful-cases.ahk`.
 5. Make the smallest implementation change that resolves the reproduced defect.
-6. Run `pwsh -File tools/test.ps1` and repository contracts.
+6. Run `pwsh -File tests/repo-contract.ps1` and `pwsh -File tools/test.ps1`.
 7. Review the diff specifically for structured-text corruption, clipboard preservation, config drift, and accidental edits to `docs/index.html`.
-8. For releases, verify `VERSION`, `AppVersion`, README behavior, changelog, and packaged defaults agree.
+8. If clipboard/input behavior changed, execute the relevant Windows desktop smoke matrix in `docs/TESTING.md` before release.
+9. For releases, follow the full release gate in `docs/TESTING.md` and verify `VERSION`, `AppVersion`, README behavior, changelog, and packaged defaults agree.
+
+## CI boundary
+
+GitHub Actions verify code. Ordinary development CI must not edit application source and push those edits back to a branch. Do not use one-shot source-patching workflows as a substitute for making a normal branch change. Keep CI permissions read-only unless a separately scoped deployment/release workflow genuinely requires write access.
 
 ## Text-transform safety
 
@@ -29,6 +36,8 @@ Protected fragments must round-trip exactly after any explicitly enabled normali
 ## Clipboard and insertion
 
 The clipboard is used only to capture the selected text. Restore the user's `ClipboardAll()` before sending the replacement text. Do not reintroduce a transformed-text clipboard paste followed by a fixed delay, because restoration can race slow paste consumers. Current output uses `SendText` deliberately for correctness.
+
+Headless CI cannot prove compatibility with every foreground Windows editor. Use `docs/TESTING.md` for Notepad, browser editable fields, VS Code, rich-text editors, large selections, non-text clipboard payloads, and no-selection behavior.
 
 ## Hotkeys and settings
 
@@ -45,4 +54,4 @@ Preserve this boundary. Do not copy transform implementations back into the Wind
 
 ## Done criteria
 
-A change is done only when the affected behavior has an automated regression/contract test where practical, Windows CI passes on the final commit, known safety invariants still hold, and documentation is updated when behavior or architecture changes.
+A change is done only when the affected behavior has an automated regression/contract test where practical, Windows CI passes on the final commit, known safety invariants still hold, and documentation is updated when behavior or architecture changes. A release is not done until the applicable desktop smoke checks in `docs/TESTING.md` also pass.
