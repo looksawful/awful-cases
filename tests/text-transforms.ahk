@@ -41,6 +41,6 @@ AssertEqual("emoji removal default is disabled", defaultFeatures["RemoveEmoji"],
 AssertEqual("default lint preserves emoji", LintText("hello 😀 ✓"), "hello 😀 ✓")
 emojiFeatures := GetDefaultFeatureState()
 emojiFeatures["RemoveEmoji"] := 1
-AssertEqual("explicit emoji removal still works", LintText("hello 😀 ✓", emojiFeatures), "hello  ✓")
+AssertEqual("explicit emoji removal still works", LintText("hello 😀 ✓", emojiFeatures), "hello ✓")
 
 FinishTests("text transformation tests")
