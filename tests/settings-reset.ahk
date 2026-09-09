@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include lib\assert.ahk
 #Include ..\app\awful-cases.ahk
 
 class FakeDropDown {
@@ -37,10 +38,5 @@ ConfigPath := originalConfigPath
 try FileDelete(testConfigPath)
 try FileDelete(A_ScriptDir . "\awful-cases.ini")
 
-if (actual != expected) {
-    FileAppend("FAIL  reset must not persist defaults before Save`n", "**")
-    ExitApp(1)
-}
-
-FileAppend("PASS  reset must not persist defaults before Save`n", "*")
-ExitApp(0)
+AssertEqual("reset must not persist defaults before Save", actual, expected)
+FinishTests("settings reset tests")
