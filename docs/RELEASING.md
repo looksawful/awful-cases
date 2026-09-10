@@ -41,7 +41,7 @@ At minimum, the release gate must cover the documented Windows desktop checks fo
 - preservation of non-text clipboard payloads;
 - empty/no-selection behavior.
 
-Record a short evidence note that is specific enough to identify the run, for example the tested Windows version, package version, applications covered, and any relevant result summary. The workflow intentionally cannot manufacture this evidence itself.
+Record a short evidence note that is specific enough to identify the run, for example the tested Windows version, package version, applications covered, and any relevant result summary. The workflow intentionally cannot manufacture this evidence itself. The evidence is validated as non-empty but is not echoed back into Actions logs.
 
 ## 3. Dispatch the GitHub Release workflow
 
@@ -69,16 +69,20 @@ The workflow fails closed unless all of the following are true:
 8. the canonical package script succeeds;
 9. package output metadata, ZIP layout and SHA256SUMS pass verification.
 
-Only the release job receives `contents: write`; the workflow default remains `contents: read`. Ordinary CI stays read-only and never publishes or edits releases.
+The workflow is split by privilege. The `verify` job runs with the workflow default `contents: read`, performs all external tool downloads, tests, compilation and package verification, then uploads the verified candidate as a short-lived GitHub Actions artifact. The `publish` job starts only after `verify` succeeds, downloads that exact artifact, verifies it again, and is the only job granted `contents: write`. Ordinary CI stays read-only and never publishes or edits releases.
+
+The artifact handoff uses commit-pinned `actions/upload-artifact` and `actions/download-artifact` actions. Publication never rebuilds a different binary under the write-capable job.
 
 ## 5. Draft-first publication
 
 Publication is deliberately two-stage:
 
-1. GitHub creates a draft Release targeting the exact verified `GITHUB_SHA` and uploads the versioned EXE, portable ZIP and `SHA256SUMS.txt`.
-2. The workflow downloads those uploaded assets back from the draft Release and runs `tests/package-output.ps1` against the downloaded copies.
-3. It verifies that the draft tag and target commit still match the requested release.
-4. Only then does it run `gh release edit ... --draft=false` and make the Release public.
+1. The read-only `verify` job produces and verifies the release candidate.
+2. The write-scoped `publish` job downloads and re-verifies that exact candidate.
+3. GitHub creates a draft Release targeting the exact verified `GITHUB_SHA` and uploads the versioned EXE, portable ZIP and `SHA256SUMS.txt`.
+4. The workflow downloads those uploaded assets back from the draft Release and runs `tests/package-output.ps1` against the downloaded copies.
+5. It verifies that the draft tag and target commit still match the requested release.
+6. Only then does it run `gh release edit ... --draft=false` and make the Release public.
 
 If the workflow fails after creating the draft but before publication, the partial draft Release and generated tag are deleted by the cleanup step. A failure after successful publication is reported but does not silently replace or mutate an existing published release.
 
