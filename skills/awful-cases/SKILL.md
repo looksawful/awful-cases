@@ -76,6 +76,18 @@ Use for `docs/index.html` or GitHub Pages work.
 
 Read `docs/README.md` first. Keep page edits separate from application behavior unless the task explicitly requires both. Do not reformat the large self-contained artifact or invent a missing generator/source project.
 
+## External methods (reference only)
+
+Keep this file as the only active repository-specific routing skill. Do not install generic workflow packs into Awful Cases merely to duplicate rules already captured here.
+
+The following upstream methods may be consulted when they add something concrete to a task:
+
+- `obra/superpowers` → `systematic-debugging`: use its reproduce/isolate/root-cause discipline for difficult Windows, clipboard, focus or hotkey defects, then apply the stricter Awful Cases evidence rules in this skill.
+- `obra/superpowers` → `verification-before-completion`: use the fresh-evidence rule before claiming a fix complete, while preserving the required Windows desktop/release gates here.
+- `gwagjiug/technical-writing` → `technical-writing`: use for developer-facing setup, packaging, testing and troubleshooting documentation. It must not invent a release state, supported environment or packaging command.
+
+These are upstream references, not additional authoritative skills. If one is ever vendored, record its exact source/revision and license, review every copied file, and keep this Awful Cases skill higher priority. Never use a whole-pack `--all` install in this repository.
+
 ## Workflow
 
 1. Classify the task using the routes above.
