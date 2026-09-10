@@ -1,11 +1,12 @@
 # Awful Cases testing and release gate
 
-Awful Cases has two verification layers:
+Awful Cases has three verification layers:
 
-1. automated repository and AutoHotkey tests, which run locally and in GitHub Actions;
-2. a short Windows desktop smoke test for behavior that depends on the foreground application, selection, keyboard input, and clipboard formats.
+1. automated repository, package-contract and AutoHotkey tests;
+2. Windows package construction and checksum verification;
+3. a short Windows desktop smoke test for behavior that depends on the foreground application, selection, keyboard input, and clipboard formats.
 
-CI is intentionally verification-only. It must not rewrite or push application source as part of ordinary development.
+Ordinary CI is intentionally verification-only. It must not rewrite or push application source or publish a GitHub Release.
 
 ## Automated gate
 
@@ -13,6 +14,7 @@ From the repository root on Windows:
 
 ```powershell
 pwsh -File tests/repo-contract.ps1
+pwsh -File tests/package-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
@@ -23,6 +25,29 @@ pwsh -File tools/test.ps1 -AutoHotkeyPath "C:\path\to\AutoHotkey64.exe"
 ```
 
 GitHub Actions runs the same repository contracts and AutoHotkey suite with pinned AutoHotkey v2.0.27 and verifies the downloaded archive SHA-256 before execution.
+
+## Package gate
+
+Build the complete release-shaped package set with:
+
+```powershell
+pwsh -File tools/package.ps1
+```
+
+The command must finish with exactly these release-shaped outputs for the version in `VERSION`:
+
+```text
+Awful-Cases-<version>-x64.exe
+Awful-Cases-Portable-<version>-x64.zip
+Awful-Cases-Setup-<version>-x64.exe
+SHA256SUMS.txt
+```
+
+The package script pins and SHA-256 verifies the official AutoHotkey, Ahk2Exe and Inno Setup downloads before executing them. `SHA256SUMS.txt` must list exactly the standalone executable, portable ZIP and installer, and every listed hash must match the corresponding built file.
+
+The portable ZIP must contain `Awful-Cases.exe`, `awful-cases.ini`, `portable.flag` and `LICENSE`. The installer must be a per-user package targeting `%LOCALAPPDATA%\Programs\Awful Cases`; it must not require administrator elevation.
+
+CI uploads the package output as a temporary Actions artifact for inspection. That artifact is verification evidence, not a public release.
 
 ## Windows desktop smoke test
 
@@ -52,21 +77,30 @@ Before each test, place unrelated content on the clipboard. At least once use no
 
 For every target also confirm that no modifier key appears stuck after the shortcut completes. A quick check is to type ordinary text immediately after the operation.
 
+For release candidates built as installed packages, also install and uninstall once, confirm the Start Menu shortcut works, confirm the optional startup task is unchecked by default, toggle `Run at startup` from the tray, and verify that user configuration under `%APPDATA%\Awful Cases` survives an application upgrade/uninstall unless deliberately removed by the user.
+
 ## Release gate
 
 Do not tag or publish a release until all items below are true:
 
 - working tree / release commit is based on current `main`;
-- GitHub CI is green on the exact release commit;
+- GitHub CI is green on the exact release commit, including the package job;
 - `pwsh -File tests/repo-contract.ps1` passes;
+- `pwsh -File tests/package-contract.ps1` passes;
 - `pwsh -File tools/test.ps1` passes with AutoHotkey v2;
-- the desktop smoke matrix above passes for the areas affected by the release; run the full matrix for changes to clipboard/input integration;
-- `VERSION` equals `AppVersion`;
+- `pwsh -File tools/package.ps1` succeeds on Windows and produces the expected four files;
+- all entries in `SHA256SUMS.txt` match the built artifacts;
+- the desktop smoke matrix above passes for the areas affected by the release; run the full matrix for changes to clipboard/input integration and before the first packaged release;
+- installed and portable configuration behavior is smoke-tested for the packaged release;
+- `VERSION`, `AppVersion`, and the Ahk2Exe version-resource directive agree;
 - `CHANGELOG.md` contains the released version and accurately describes user-visible changes;
 - `app/awful-cases.ini`, `GetDefaultConfig()`, and `GetDefaultFeatureState()` remain synchronized through repository contracts;
 - README/settings documentation matches the actual behavior;
-- no temporary one-shot workflow or source-patching automation is present in `.github/workflows/`.
+- no temporary one-shot workflow or source-patching automation is present in `.github/workflows/`;
+- the `Release` workflow is manually dispatched from `main` with `desktop_smoke_passed=true` only after the checks above are actually complete.
+
+The current executable and installer are unsigned. Passing this release gate does not imply Authenticode signing or SmartScreen reputation.
 
 ## When a smoke check fails
 
-Record the exact target application, its version when relevant, input text, action/hotkey, clipboard type, and observed result. Reduce the case before changing code. If the failure is deterministic, add an automated test for the pure or integration logic that can be isolated, then make the smallest fix. Do not replace application-specific evidence with longer arbitrary `Sleep` delays.
+Record the exact target application, its version when relevant, input text, action/hotkey, clipboard type, package type, and observed result. Reduce the case before changing code. If the failure is deterministic, add an automated test for the pure or integration logic that can be isolated, then make the smallest fix. Do not replace application-specific evidence with longer arbitrary `Sleep` delays.

@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      desktop_smoke_passed:
+        description: Confirm that the Windows desktop smoke matrix in docs/TESTING.md passed for this exact release commit
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Require explicit desktop smoke confirmation
+        shell: pwsh
+        run: |
+          if ('${{ inputs.desktop_smoke_passed }}' -ne 'true') {
+            throw 'Release blocked: desktop_smoke_passed must be explicitly confirmed.'
+          }
+          if ($env:GITHUB_REF_NAME -ne 'main') {
+            throw "Release blocked: workflow must run from main, got '$env:GITHUB_REF_NAME'."
+          }
+
+      - name: Checkout exact release commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Require successful ordinary CI for exact commit
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $runs = gh run list --workflow ci.yml --commit $env:GITHUB_SHA --status success --limit 20 --json databaseId,headSha,conclusion | ConvertFrom-Json
+          $matching = @($runs | Where-Object { $_.headSha -eq $env:GITHUB_SHA -and $_.conclusion -eq 'success' })
+          if ($matching.Count -eq 0) {
+            throw "Release blocked: no successful CI run exists for exact commit $env:GITHUB_SHA."
+          }
+          Write-Host "Verified successful CI for $env:GITHUB_SHA."
+
+      - name: Build release-shaped Windows packages
+        shell: pwsh
+        run: pwsh -File tools/package.ps1
+
+      - name: Run repository and package contracts
+        shell: pwsh
+        run: pwsh -File tests/repo-contract.ps1
+
+      - name: Run AutoHotkey regression suite against pinned runtime
+        shell: pwsh
+        run: |
+          $ahk = Get-ChildItem '.build\packaging\tools\autohotkey' -Recurse -Filter 'AutoHotkey64.exe' | Select-Object -First 1
+          if (-not $ahk) { throw 'Pinned AutoHotkey64.exe was not found after packaging.' }
+          pwsh -File tools/test.ps1 -AutoHotkeyPath $ahk.FullName
+
+      - name: Create or validate release tag
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content VERSION -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid VERSION '$version'." }
+          $tag = "v$version"
+
+          git fetch --tags --force
+          git show-ref --verify --quiet "refs/tags/$tag"
+          if ($LASTEXITCODE -eq 0) {
+            $tagCommit = (git rev-list -n 1 $tag).Trim()
+            if ($tagCommit -ne $env:GITHUB_SHA) {
+              throw "Tag $tag already exists at $tagCommit, not $env:GITHUB_SHA."
+            }
+            Write-Host "Existing tag $tag already points to this release commit."
+          }
+          else {
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git tag -a $tag $env:GITHUB_SHA -m "Awful Cases $version"
+            git push origin $tag
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $env:TAG already exists; refusing to overwrite it."
+          }
+
+          $assets = @(
+            "dist\Awful-Cases-$env:VERSION-x64.exe",
+            "dist\Awful-Cases-Portable-$env:VERSION-x64.zip",
+            "dist\Awful-Cases-Setup-$env:VERSION-x64.exe",
+            'dist\SHA256SUMS.txt'
+          )
+          foreach ($asset in $assets) {
+            if (-not (Test-Path -LiteralPath $asset -PathType Leaf)) { throw "Missing release asset: $asset" }
+          }
+
+          gh release create $env:TAG @assets --verify-tag --title "Awful Cases $env:VERSION" --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE." }
+
+      - name: Download and verify published assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $verifyDir = Join-Path $env:RUNNER_TEMP 'awful-cases-release-verify'
+          Remove-Item -LiteralPath $verifyDir -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $verifyDir -Force | Out-Null
+
+          gh release download $env:TAG --dir $verifyDir
+          if ($LASTEXITCODE -ne 0) { throw "Could not download release $env:TAG for verification." }
+
+          $checksumFile = Join-Path $verifyDir 'SHA256SUMS.txt'
+          if (-not (Test-Path -LiteralPath $checksumFile -PathType Leaf)) {
+            throw 'Published SHA256SUMS.txt is missing.'
+          }
+
+          $verified = 0
+          foreach ($line in Get-Content -LiteralPath $checksumFile) {
+            if ($line -notmatch '^([A-Fa-f0-9]{64})  (.+)$') {
+              throw "Malformed checksum line: $line"
+            }
+            $expected = $Matches[1].ToUpperInvariant()
+            $fileName = $Matches[2]
+            $filePath = Join-Path $verifyDir $fileName
+            if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
+              throw "Published asset listed in checksums is missing: $fileName"
+            }
+            $actual = (Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash
+            if ($actual -ne $expected) {
+              throw "Published asset checksum mismatch for $fileName. Expected $expected, got $actual."
+            }
+            $verified += 1
+            Write-Host "Verified published asset: $fileName"
+          }
+          if ($verified -ne 3) { throw "Expected 3 hashed release assets, verified $verified." }

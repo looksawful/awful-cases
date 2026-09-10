@@ -2,14 +2,28 @@
 #SingleInstance Force
 #UseHook
 #Include lib\text-transforms.ahk
+#Include lib\app-paths.ahk
 ; Awful Cases
 ; Text case and typography utility for Windows.
 ; Copyright (c) 2026 Ivan Krushinsky
 ; Code license: MIT
+;@Ahk2Exe-SetName Awful Cases
+;@Ahk2Exe-SetProductName Awful Cases
+;@Ahk2Exe-SetDescription Text case and typography utility for Windows
+;@Ahk2Exe-SetCompanyName looksawful
+;@Ahk2Exe-SetCopyright Copyright (c) 2026 Ivan Krushinsky
+;@Ahk2Exe-SetOrigFilename Awful-Cases.exe
+;@Ahk2Exe-SetVersion 0.2.0
+;@Ahk2Exe-SetMainIcon awful-cases.ico
 
 global AppName := "Awful Cases"
-global AppVersion := "0.1.0"
-global ConfigPath := A_ScriptDir "\awful-cases.ini"
+global AppVersion := "0.2.0"
+global PortableMarkerPath := A_ScriptDir "\portable.flag"
+global PortableMode := A_IsCompiled && FileExist(PortableMarkerPath)
+global ConfigPath := ResolveConfigPath(A_ScriptDir, A_AppData, A_IsCompiled, PortableMode)
+global AutoStartRegKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
+global AutoStartRegName := AppName
+global AutoStartTrayLabel := "Run at startup"
 global AllowedFinalHotkeyKeys := ["Up", "Down", "Left", "Right", "Home", "End", "PgUp", "PgDn", "Tab", "Backspace", "Delete", "Insert"
 , "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
 , "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
@@ -20,9 +34,21 @@ SetupTray()
 RegisterHotkeys()
 
 EnsureConfig() {
-global ConfigPath
+global ConfigPath, PortableMode
 if FileExist(ConfigPath) {
 return
+}
+configDir := ""
+SplitPath(ConfigPath, , &configDir)
+if configDir != "" && !DirExist(configDir) {
+DirCreate(configDir)
+}
+legacyConfigPath := A_ScriptDir "\awful-cases.ini"
+if !PortableMode && legacyConfigPath != ConfigPath && FileExist(legacyConfigPath) {
+try {
+FileCopy(legacyConfigPath, ConfigPath)
+return
+}
 }
 FileAppend(GetDefaultConfig(), ConfigPath, "UTF-8")
 }
@@ -74,18 +100,63 @@ return Map(
 }
 
 SetupTray() {
-global AppName
+global AppName, AutoStartTrayLabel
 A_TrayMenu.Delete()
 A_TrayMenu.Add(AppName, (*) => ShowSettingsGui())
 A_TrayMenu.Disable(AppName)
 A_TrayMenu.Add()
 A_TrayMenu.Add("Settings", (*) => ShowSettingsGui())
 A_TrayMenu.Add("Open config", (*) => OpenConfig())
+if A_IsCompiled {
+A_TrayMenu.Add(AutoStartTrayLabel, (*) => ToggleAutoStart())
+if IsAutoStartEnabled() {
+A_TrayMenu.Check(AutoStartTrayLabel)
+}
+}
 A_TrayMenu.Add("About", (*) => ShowAbout())
 A_TrayMenu.Add("Reload", (*) => Reload())
 A_TrayMenu.Add("Reset to defaults", (*) => ResetToDefaults())
 A_TrayMenu.Add()
 A_TrayMenu.Add("Exit", (*) => ExitApp())
+}
+
+GetAutoStartCommand() {
+return Chr(34) . A_ScriptFullPath . Chr(34)
+}
+
+IsAutoStartEnabled() {
+global AutoStartRegKey, AutoStartRegName
+try value := RegRead(AutoStartRegKey, AutoStartRegName, "")
+catch {
+return false
+}
+return value = GetAutoStartCommand()
+}
+
+SetAutoStartEnabled(enabled) {
+global AutoStartRegKey, AutoStartRegName
+if enabled {
+RegWrite(GetAutoStartCommand(), "REG_SZ", AutoStartRegKey, AutoStartRegName)
+return
+}
+try RegDelete(AutoStartRegKey, AutoStartRegName)
+}
+
+ToggleAutoStart() {
+global AutoStartTrayLabel
+try {
+enabled := !IsAutoStartEnabled()
+SetAutoStartEnabled(enabled)
+if enabled {
+A_TrayMenu.Check(AutoStartTrayLabel)
+ShowToast("Starts with Windows")
+} else {
+A_TrayMenu.Uncheck(AutoStartTrayLabel)
+ShowToast("Windows startup disabled")
+}
+} catch {
+ShowToast("Cannot update startup setting")
+}
 }
 
 RegisterHotkeys() {
