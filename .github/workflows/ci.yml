@@ -48,3 +48,28 @@ jobs:
       - name: Run characterization tests
         shell: pwsh
         run: pwsh -File tools/test.ps1 -AutoHotkeyPath "$env:AHK_EXE"
+
+  package:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build portable Windows package
+        shell: pwsh
+        run: pwsh -File tools/package.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-dist"
+
+      - name: Verify package outputs
+        shell: pwsh
+        run: pwsh -File tests/package-output.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-dist"
+
+      - name: Retain verified package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: awful-cases-windows-x64-${{ github.sha }}
+          path: ${{ runner.temp }}\awful-cases-dist\*
+          if-no-files-found: error
+          retention-days: 7
