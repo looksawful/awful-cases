@@ -20,6 +20,10 @@ jobs:
         shell: pwsh
         run: pwsh -File tests/repo-contract.ps1
 
+      - name: Run package contract checks
+        shell: pwsh
+        run: pwsh -File tests/package-contract.ps1
+
       - name: Install AutoHotkey v2.0.27
         shell: pwsh
         run: |
