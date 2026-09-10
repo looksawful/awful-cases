@@ -8,6 +8,7 @@ Set-StrictMode -Version Latest
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $version = (Get-Content -LiteralPath (Join-Path $repoRoot 'VERSION') -Raw).Trim()
+$versionResource = "$version.0"
 $outputRoot = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
 function Fail([string]$Message) {
@@ -20,6 +21,25 @@ function Require-File([string]$Path) {
     }
 }
 
+function Assert-ExeMetadata([string]$Path, [string]$Label) {
+    $info = (Get-Item -LiteralPath $Path).VersionInfo
+    if ($info.FileVersion -ne $versionResource) {
+        Fail "$Label FileVersion '$($info.FileVersion)' does not equal '$versionResource'"
+    }
+    if ($info.ProductVersion -ne $versionResource) {
+        Fail "$Label ProductVersion '$($info.ProductVersion)' does not equal '$versionResource'"
+    }
+    if ($info.ProductName -ne 'Awful Cases') {
+        Fail "$Label ProductName '$($info.ProductName)' does not equal 'Awful Cases'"
+    }
+    if ($info.OriginalFilename -ne 'awful-cases.exe') {
+        Fail "$Label OriginalFilename '$($info.OriginalFilename)' does not equal 'awful-cases.exe'"
+    }
+    if ($info.CompanyName -ne 'looksawful') {
+        Fail "$Label CompanyName '$($info.CompanyName)' does not equal 'looksawful'"
+    }
+}
+
 $exeName = "awful-cases-v$version-windows-x64.exe"
 $zipName = "awful-cases-v$version-windows-x64.zip"
 $exePath = Join-Path $outputRoot $exeName
@@ -29,11 +49,7 @@ $checksumPath = Join-Path $outputRoot 'SHA256SUMS.txt'
 Require-File $exePath
 Require-File $zipPath
 Require-File $checksumPath
-
-$versionInfo = (Get-Item -LiteralPath $exePath).VersionInfo
-if ([string]::IsNullOrWhiteSpace($versionInfo.FileVersion) -or -not $versionInfo.FileVersion.StartsWith($version)) {
-    Fail "compiled FileVersion '$($versionInfo.FileVersion)' does not match VERSION '$version'"
-}
+Assert-ExeMetadata $exePath 'standalone executable'
 
 $checksumLines = @(Get-Content -LiteralPath $checksumPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 if ($checksumLines.Count -ne 2) {
@@ -63,10 +79,7 @@ try {
         Fail "portable ZIP VERSION '$packagedVersion' does not match repository VERSION '$version'"
     }
 
-    $packagedExeVersion = (Get-Item -LiteralPath (Join-Path $portableDir 'awful-cases.exe')).VersionInfo.FileVersion
-    if ([string]::IsNullOrWhiteSpace($packagedExeVersion) -or -not $packagedExeVersion.StartsWith($version)) {
-        Fail "portable ZIP executable FileVersion '$packagedExeVersion' does not match VERSION '$version'"
-    }
+    Assert-ExeMetadata (Join-Path $portableDir 'awful-cases.exe') 'portable ZIP executable'
 } finally {
     Remove-Item -LiteralPath $verifyRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
@@ -75,3 +88,4 @@ Write-Host 'Package output verification passed.'
 Write-Host "Version: $version"
 Write-Host "EXE: $exeName"
 Write-Host "ZIP: $zipName"
+Write-Host "PE metadata: FileVersion/ProductVersion=$versionResource, ProductName/OriginalFilename/CompanyName verified"
