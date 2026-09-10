@@ -45,6 +45,33 @@ function Download-VerifiedArchive(
     Write-Host "$Label SHA-256 verified: $actualSha256"
 }
 
+function Wait-ForStableFile(
+    [string]$Path,
+    [int]$TimeoutSeconds = 30
+) {
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    $lastLength = -1L
+    $stableSamples = 0
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            $length = (Get-Item -LiteralPath $Path).Length
+            if ($length -gt 0 -and $length -eq $lastLength) {
+                $stableSamples += 1
+                if ($stableSamples -ge 3) {
+                    return
+                }
+            } else {
+                $stableSamples = 0
+                $lastLength = $length
+            }
+        }
+        Start-Sleep -Milliseconds 250
+    }
+
+    throw "Timed out waiting for generated file: $Path"
+}
+
 $versionPath = Join-Path $repoRoot 'VERSION'
 $sourceDir = Join-Path $repoRoot 'app'
 $sourcePath = Join-Path $sourceDir 'awful-cases.ahk'
@@ -134,11 +161,16 @@ try {
     $checksumOut = Join-Path $OutputDirectory 'SHA256SUMS.txt'
 
     Write-Host "Compiling $exeName with Ahk2Exe v$ahk2ExeVersion / AutoHotkey v$autoHotkeyVersion..."
+    Write-Host "Build source: $buildSource (exists: $(Test-Path -LiteralPath $buildSource))"
     & $compilerPath.FullName /in $buildSource /out $exeOut /icon $buildIcon /base $baseExe.FullName /silent verbose
     $compilerExit = $LASTEXITCODE
     if ($compilerExit -ne 0) {
-        throw "Ahk2Exe failed with exit code $compilerExit."
+        throw "Ahk2Exe launcher failed with exit code $compilerExit."
     }
+
+    # Ahk2Exe can hand work to another process and return before the output file is complete.
+    # Keep the temporary source alive and wait for a stable non-empty executable before cleanup.
+    Wait-ForStableFile $exeOut
     Require-File $exeOut 'compiled executable'
 
     $versionInfo = (Get-Item -LiteralPath $exeOut).VersionInfo
