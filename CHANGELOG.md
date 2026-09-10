@@ -16,6 +16,8 @@
 - Made nested fragment protection restore safely when protected patterns overlap.
 - Removed the clipboard paste/restoration race by restoring the user's clipboard before inserting transformed text with `SendText`.
 - Added Windows regression tests, repository contracts and pinned AutoHotkey v2.0.27 CI with archive SHA-256 verification.
+- Added a reproducible-enough Windows x64 portable packaging pipeline using pinned SHA-256-verified AutoHotkey v2.0.27 and Ahk2Exe v1.1.37.02a2, package contracts, versioned EXE/ZIP outputs and SHA256SUMS.txt.
+- Pinned GitHub Actions used by CI/package verification to exact commit SHAs while keeping ordinary CI read-only and non-publishing.
 - Documented `docs/index.html` provenance and editing policy.
 
 ## 0.1.0
