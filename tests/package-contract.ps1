@@ -37,6 +37,12 @@ foreach ($token in $requiredScriptTokens) {
     }
 }
 
+# Packaging must never recursively delete a caller-supplied output directory.
+# Shared artifact folders and accidental paths such as '.' must preserve unrelated files.
+if ($packageScript -match 'Remove-Item\s+-LiteralPath\s+\$OutputDirectory\s+-Recurse') {
+    Fail 'tools/package.ps1 must not recursively delete OutputDirectory; remove only known package outputs and reject dangerous destinations'
+}
+
 $expectedExe = "awful-cases-v$version-windows-x64.exe"
 $expectedZip = "awful-cases-v$version-windows-x64.zip"
 foreach ($artifactName in @($expectedExe, $expectedZip)) {
