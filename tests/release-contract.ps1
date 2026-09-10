@@ -40,7 +40,9 @@ $requiredWorkflowTokens = @(
     'gh release edit',
     '--draft=false',
     'contents: write',
-    '3d3c42e5aac5ba805825da76410c181273ba90b1'
+    '3d3c42e5aac5ba805825da76410c181273ba90b1',
+    'ea165f8d65b6e75b540449e92b4886f43607fa02',
+    '3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c'
 )
 foreach ($token in $requiredWorkflowTokens) {
     if ($releaseWorkflow -notmatch [regex]::Escape($token)) {
@@ -57,10 +59,22 @@ if ($releaseWorkflow -match '(?m)^\s*pull_request\s*:') {
 if ($releaseWorkflow -notmatch '(?m)^permissions:\s*\r?\n\s+contents:\s*read\s*$') {
     Fail 'release workflow must default to contents: read'
 }
-if ($releaseWorkflow -notmatch '(?ms)^\s+permissions:\s*\r?\n\s+contents:\s*write\s*$') {
-    Fail 'release publication job must explicitly scope contents: write'
+
+$verifyIndex = $releaseWorkflow.IndexOf("  verify:", [StringComparison]::Ordinal)
+$publishIndex = $releaseWorkflow.IndexOf("  publish:", [StringComparison]::Ordinal)
+$writeIndex = $releaseWorkflow.IndexOf("      contents: write", [StringComparison]::Ordinal)
+if ($verifyIndex -lt 0 -or $publishIndex -lt 0 -or $publishIndex -le $verifyIndex) {
+    Fail 'release workflow must separate read-only verify and publish jobs'
 }
-if ($releaseWorkflow -notmatch [regex]::Escape("SMOKE-PASSED")) {
+if ($releaseWorkflow -notmatch '(?m)^\s{4}needs:\s*verify\s*$') {
+    Fail 'publish job must depend on successful verify job'
+}
+$writeMatches = [regex]::Matches($releaseWorkflow, '(?m)^\s+contents:\s*write\s*$')
+if ($writeMatches.Count -ne 1 -or $writeIndex -lt $publishIndex) {
+    Fail 'contents: write must appear exactly once and only inside the publish job'
+}
+
+if ($releaseWorkflow -notmatch [regex]::Escape('SMOKE-PASSED')) {
     Fail 'release workflow must require the exact SMOKE-PASSED confirmation phrase'
 }
 if ($releaseWorkflow -notmatch '(?i)IsNullOrWhiteSpace') {
@@ -74,6 +88,9 @@ if ($releaseWorkflow -notmatch '(?i)GITHUB_SHA') {
 }
 if ($releaseWorkflow -notmatch '(?i)release delete') {
     Fail 'release workflow must clean up a partial draft release when publication fails'
+}
+if ($releaseWorkflow -match '(?i)Write-Host\s+.*SMOKE_EVIDENCE') {
+    Fail 'release workflow must not echo desktop smoke evidence into public Actions logs'
 }
 
 $requiredGuideTokens = @(
@@ -100,5 +117,6 @@ if ($ciWorkflow -notmatch [regex]::Escape('pwsh -File tests/release-contract.ps1
 
 Write-Host 'Release repository contract passed.'
 Write-Host 'Trigger: workflow_dispatch only'
+Write-Host 'Permissions: verify read-only, publish job only contents: write'
 Write-Host 'Publication gate: main + exact version + desktop smoke evidence'
-Write-Host 'Publication model: draft -> downloaded asset verification -> public release'
+Write-Host 'Publication model: verified artifact -> draft -> downloaded asset verification -> public release'
