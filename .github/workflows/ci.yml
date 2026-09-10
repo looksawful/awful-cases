@@ -62,6 +62,10 @@ jobs:
         shell: pwsh
         run: pwsh -File tests/package-contract.ps1
 
+      - name: Run installer lifecycle smoke
+        shell: pwsh
+        run: pwsh -File tools/install-smoke.ps1
+
       - name: Upload Windows package artifacts
         uses: actions/upload-artifact@v4
         with:
