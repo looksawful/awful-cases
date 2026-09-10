@@ -50,6 +50,19 @@ function Get-VerifiedDownload {
     Write-Host "Verified SHA-256: $actualSha256"
 }
 
+function Invoke-CheckedProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+        [Parameter(Mandatory = $true)][string]$DisplayName
+    )
+
+    $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -Wait -PassThru -NoNewWindow
+    if ($process.ExitCode -ne 0) {
+        throw "$DisplayName failed with exit code $($process.ExitCode)."
+    }
+}
+
 $autoHotkeyZip = Join-Path $downloadsDir "AutoHotkey_$AutoHotkeyVersion.zip"
 $ahk2ExeZip = Join-Path $downloadsDir "Ahk2Exe$Ahk2ExeVersion.zip"
 $innoSetupInstaller = Join-Path $downloadsDir "innosetup-$InnoSetupVersion-x64.exe"
@@ -93,10 +106,14 @@ if (-not (Test-Path -LiteralPath $portableZip -PathType Leaf)) {
 }
 
 Write-Host "Installing pinned Inno Setup $InnoSetupVersion into temporary tooling directory."
-& $innoSetupInstaller /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- "/DIR=$innoSetupDir"
-if ($LASTEXITCODE -ne 0) {
-    throw "Inno Setup bootstrap installer failed with exit code $LASTEXITCODE."
-}
+$innoBootstrapArgs = @(
+    '/VERYSILENT',
+    '/SUPPRESSMSGBOXES',
+    '/NORESTART',
+    '/SP-',
+    "/DIR=`"$innoSetupDir`""
+)
+Invoke-CheckedProcess -FilePath $innoSetupInstaller -ArgumentList $innoBootstrapArgs -DisplayName 'Inno Setup bootstrap installer'
 
 $iscc = Get-ChildItem -LiteralPath $innoSetupDir -Recurse -Filter 'ISCC.exe' | Select-Object -First 1
 if (-not $iscc) {
@@ -104,16 +121,12 @@ if (-not $iscc) {
 }
 
 $installerScript = Join-Path $repoRoot 'installer\awful-cases.iss'
-Push-Location (Split-Path -Parent $installerScript)
-try {
-    & $iscc.FullName "/DMyAppVersion=$version" "/DSourceExe=$standaloneExe" $installerScript
-    if ($LASTEXITCODE -ne 0) {
-        throw "Inno Setup compiler failed with exit code $LASTEXITCODE."
-    }
-}
-finally {
-    Pop-Location
-}
+$isccArgs = @(
+    "/DMyAppVersion=$version",
+    "/DSourceExe=`"$standaloneExe`"",
+    "`"$installerScript`""
+)
+Invoke-CheckedProcess -FilePath $iscc.FullName -ArgumentList $isccArgs -DisplayName 'Inno Setup compiler'
 
 $setupExe = Join-Path $distDir "Awful-Cases-Setup-$version-x64.exe"
 if (-not (Test-Path -LiteralPath $setupExe -PathType Leaf)) {
