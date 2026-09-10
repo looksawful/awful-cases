@@ -1,5 +1,6 @@
 dist/*
 !dist/.gitkeep
+.build/
 test-results/
 *.log
 *.tmp
