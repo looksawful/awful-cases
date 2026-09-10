@@ -1,0 +1,282 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Repository VERSION to publish, for example 0.2.0
+        required: true
+        type: string
+      desktop_smoke_confirmed:
+        description: Type SMOKE-PASSED only after completing docs/TESTING.md desktop release smoke
+        required: true
+        type: string
+      desktop_smoke_evidence:
+        description: Brief evidence note identifying the Windows desktop smoke run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: awful-cases-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      SMOKE_CONFIRMATION: ${{ inputs.desktop_smoke_confirmed }}
+      SMOKE_EVIDENCE: ${{ inputs.desktop_smoke_evidence }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout exact requested ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:GITHUB_REF -cne 'refs/heads/main') {
+            throw "Release workflow must run from refs/heads/main, got '$env:GITHUB_REF'."
+          }
+          if ($env:SMOKE_CONFIRMATION -cne 'SMOKE-PASSED') {
+            throw 'desktop_smoke_confirmed must be exactly SMOKE-PASSED.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SMOKE_EVIDENCE)) {
+            throw 'desktop_smoke_evidence must contain a real smoke-test evidence note.'
+          }
+
+          $repoVersion = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($env:RELEASE_VERSION -cne $repoVersion) {
+            throw "Requested release version '$env:RELEASE_VERSION' does not match repository VERSION '$repoVersion'."
+          }
+
+          $tag = "v$repoVersion"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to check existing release tag.'
+          }
+          if (-not [string]::IsNullOrWhiteSpace($existingTag)) {
+            throw "Tag '$tag' already exists. Releases are immutable through this workflow."
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "GitHub Release '$tag' already exists."
+          }
+
+          Write-Host "Release gate accepted for $tag at $env:GITHUB_SHA."
+          Write-Host 'Desktop smoke evidence was supplied and is intentionally not echoed to Actions logs.'
+
+      - name: Run repository contract checks
+        shell: pwsh
+        run: pwsh -File tests/repo-contract.ps1
+
+      - name: Run package contract checks
+        shell: pwsh
+        run: pwsh -File tests/package-contract.ps1
+
+      - name: Run release contract checks
+        shell: pwsh
+        run: pwsh -File tests/release-contract.ps1
+
+      - name: Install AutoHotkey v2.0.27
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '2.0.27'
+          $expectedSha256 = 'F72CAD4B98A7B5AA050B35D6DEAA0B0E3949929B2AAFF7D0D69858F1F380B3EF'
+          $zip = Join-Path $env:RUNNER_TEMP 'autohotkey.zip'
+          $dir = Join-Path $env:RUNNER_TEMP 'autohotkey'
+          $uri = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v$version/AutoHotkey_$version.zip"
+
+          Invoke-WebRequest -Uri $uri -OutFile $zip
+          $actualSha256 = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "AutoHotkey archive SHA256 mismatch: $actualSha256"
+          }
+          Expand-Archive -LiteralPath $zip -DestinationPath $dir -Force
+
+          $exe = Get-ChildItem -LiteralPath $dir -Recurse -Filter 'AutoHotkey64.exe' -File | Select-Object -First 1
+          if (-not $exe) {
+            throw 'AutoHotkey64.exe was not found after extraction.'
+          }
+          "AHK_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Run AutoHotkey regression tests
+        shell: pwsh
+        run: pwsh -File tools/test.ps1 -AutoHotkeyPath "$env:AHK_EXE"
+
+      - name: Build release package
+        shell: pwsh
+        run: pwsh -File tools/package.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
+
+      - name: Verify local release package
+        shell: pwsh
+        run: pwsh -File tests/package-output.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
+
+      - name: Transfer verified release candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: awful-cases-release-${{ github.sha }}
+          path: ${{ runner.temp }}\awful-cases-release\*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      SMOKE_CONFIRMATION: ${{ inputs.desktop_smoke_confirmed }}
+      SMOKE_EVIDENCE: ${{ inputs.desktop_smoke_evidence }}
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_DRAFT_CREATED: '0'
+
+    steps:
+      - name: Checkout exact verified ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Download verified release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: awful-cases-release-${{ github.sha }}
+          path: ${{ runner.temp }}\awful-cases-release
+
+      - name: Revalidate publication identity and gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:GITHUB_REF -cne 'refs/heads/main') {
+            throw "Publication must run from refs/heads/main, got '$env:GITHUB_REF'."
+          }
+          if ($env:SMOKE_CONFIRMATION -cne 'SMOKE-PASSED') {
+            throw 'desktop_smoke_confirmed must remain exactly SMOKE-PASSED.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SMOKE_EVIDENCE)) {
+            throw 'desktop_smoke_evidence must remain non-empty.'
+          }
+
+          $repoVersion = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($env:RELEASE_VERSION -cne $repoVersion) {
+            throw "Requested release version '$env:RELEASE_VERSION' no longer matches repository VERSION '$repoVersion'."
+          }
+
+          $tag = "v$repoVersion"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to re-check existing release tag.'
+          }
+          if (-not [string]::IsNullOrWhiteSpace($existingTag)) {
+            throw "Tag '$tag' appeared after verification. Refusing to overwrite it."
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "GitHub Release '$tag' appeared after verification. Refusing to overwrite it."
+          }
+
+      - name: Verify transferred release package
+        shell: pwsh
+        run: pwsh -File tests/package-output.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
+
+      - name: Create draft GitHub Release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$env:RELEASE_VERSION"
+          $dist = Join-Path $env:RUNNER_TEMP 'awful-cases-release'
+          $exe = Join-Path $dist "awful-cases-v$env:RELEASE_VERSION-windows-x64.exe"
+          $zip = Join-Path $dist "awful-cases-v$env:RELEASE_VERSION-windows-x64.zip"
+          $checksums = Join-Path $dist 'SHA256SUMS.txt'
+
+          gh release create $tag $exe $zip $checksums `
+            --repo $env:GITHUB_REPOSITORY `
+            --target $env:GITHUB_SHA `
+            --title "Awful Cases v$env:RELEASE_VERSION" `
+            --generate-notes `
+            --draft
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create draft release '$tag'."
+          }
+
+          'RELEASE_DRAFT_CREATED=1' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Download and verify uploaded draft assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$env:RELEASE_VERSION"
+          $verifyDir = Join-Path $env:RUNNER_TEMP 'awful-cases-release-verify'
+          New-Item -ItemType Directory -Path $verifyDir -Force | Out-Null
+
+          gh release download $tag --repo $env:GITHUB_REPOSITORY --dir $verifyDir
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to download draft release '$tag' assets."
+          }
+
+          pwsh -File tests/package-output.ps1 -OutputDirectory $verifyDir
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Downloaded release asset verification failed.'
+          }
+
+          $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName,isDraft,isPrerelease,targetCommitish | ConvertFrom-Json
+          if (-not $release.isDraft) {
+            throw 'Release must remain draft until uploaded assets are verified.'
+          }
+          if ($release.isPrerelease) {
+            throw 'Stable release workflow must not create a prerelease.'
+          }
+          if ($release.tagName -cne $tag) {
+            throw "Release tag '$($release.tagName)' does not match '$tag'."
+          }
+          if ($release.targetCommitish -cne $env:GITHUB_SHA) {
+            throw "Draft release target '$($release.targetCommitish)' does not match verified commit '$env:GITHUB_SHA'."
+          }
+
+      - name: Publish verified release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$env:RELEASE_VERSION"
+          gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to publish verified release '$tag'."
+          }
+          'RELEASE_DRAFT_CREATED=0' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Verify public release state
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$env:RELEASE_VERSION"
+          $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName,isDraft,isPrerelease,targetCommitish,url | ConvertFrom-Json
+          if ($release.isDraft -or $release.isPrerelease) {
+            throw "Release '$tag' is not a stable public release."
+          }
+          if ($release.targetCommitish -cne $env:GITHUB_SHA) {
+            throw "Published release target '$($release.targetCommitish)' does not match '$env:GITHUB_SHA'."
+          }
+          Write-Host "Published and verified: $($release.url)"
+
+      - name: Clean up partial draft release after failure
+        if: failure() && env.RELEASE_DRAFT_CREATED == '1'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $tag = "v$env:RELEASE_VERSION"
+          gh release delete $tag --repo $env:GITHUB_REPOSITORY --yes --cleanup-tag
