@@ -44,3 +44,28 @@ jobs:
       - name: Run characterization tests
         shell: pwsh
         run: pwsh -File tools/test.ps1 -AutoHotkeyPath "$env:AHK_EXE"
+
+  package:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build Windows packages
+        shell: pwsh
+        run: pwsh -File tools/package.ps1
+
+      - name: Run package contracts
+        shell: pwsh
+        run: pwsh -File tests/package-contract.ps1
+
+      - name: Upload Windows package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: awful-cases-windows-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
