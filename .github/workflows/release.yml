@@ -24,17 +24,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  verify:
     runs-on: windows-latest
     timeout-minutes: 20
-    permissions:
-      contents: write
     env:
       RELEASE_VERSION: ${{ inputs.version }}
       SMOKE_CONFIRMATION: ${{ inputs.desktop_smoke_confirmed }}
       SMOKE_EVIDENCE: ${{ inputs.desktop_smoke_evidence }}
       GH_TOKEN: ${{ github.token }}
-      RELEASE_DRAFT_CREATED: '0'
 
     steps:
       - name: Checkout exact requested ref
@@ -77,7 +74,7 @@ jobs:
           }
 
           Write-Host "Release gate accepted for $tag at $env:GITHUB_SHA."
-          Write-Host "Desktop smoke evidence: $env:SMOKE_EVIDENCE"
+          Write-Host 'Desktop smoke evidence was supplied and is intentionally not echoed to Actions logs.'
 
       - name: Run repository contract checks
         shell: pwsh
@@ -123,6 +120,77 @@ jobs:
         run: pwsh -File tools/package.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
 
       - name: Verify local release package
+        shell: pwsh
+        run: pwsh -File tests/package-output.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
+
+      - name: Transfer verified release candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: awful-cases-release-${{ github.sha }}
+          path: ${{ runner.temp }}\awful-cases-release\*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      SMOKE_CONFIRMATION: ${{ inputs.desktop_smoke_confirmed }}
+      SMOKE_EVIDENCE: ${{ inputs.desktop_smoke_evidence }}
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_DRAFT_CREATED: '0'
+
+    steps:
+      - name: Checkout exact verified ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Download verified release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: awful-cases-release-${{ github.sha }}
+          path: ${{ runner.temp }}\awful-cases-release
+
+      - name: Revalidate publication identity and gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:GITHUB_REF -cne 'refs/heads/main') {
+            throw "Publication must run from refs/heads/main, got '$env:GITHUB_REF'."
+          }
+          if ($env:SMOKE_CONFIRMATION -cne 'SMOKE-PASSED') {
+            throw 'desktop_smoke_confirmed must remain exactly SMOKE-PASSED.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SMOKE_EVIDENCE)) {
+            throw 'desktop_smoke_evidence must remain non-empty.'
+          }
+
+          $repoVersion = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($env:RELEASE_VERSION -cne $repoVersion) {
+            throw "Requested release version '$env:RELEASE_VERSION' no longer matches repository VERSION '$repoVersion'."
+          }
+
+          $tag = "v$repoVersion"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to re-check existing release tag.'
+          }
+          if (-not [string]::IsNullOrWhiteSpace($existingTag)) {
+            throw "Tag '$tag' appeared after verification. Refusing to overwrite it."
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "GitHub Release '$tag' appeared after verification. Refusing to overwrite it."
+          }
+
+      - name: Verify transferred release package
         shell: pwsh
         run: pwsh -File tests/package-output.ps1 -OutputDirectory "$env:RUNNER_TEMP\awful-cases-release"
 
