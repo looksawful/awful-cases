@@ -1,10 +1,12 @@
 # Awful Cases
 
-[Website](https://looksawful.github.io/awful-cases/) · [Download ZIP](https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip) · [looksawful.ru](https://looksawful.ru)
+[Website](https://looksawful.github.io/awful-cases/) · [Source ZIP](https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip) · [looksawful.ru](https://looksawful.ru)
 
 Windows tray utility for changing the case and typography of selected text.
 
 Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app replaces the selection with the transformed version.
+
+> The repository archive linked above is source code, not an installer or published application release. Windows binary packaging is defined in [`docs/PACKAGING.md`](docs/PACKAGING.md); public binary download links belong here only after a real GitHub Release exists and its assets have been verified.
 
 ## Features
 
@@ -79,10 +81,19 @@ Run the Windows test suite with:
 
 ```powershell
 pwsh -File tests/repo-contract.ps1
+pwsh -File tests/package-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
-CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification.
+Build the portable Windows x64 package with:
+
+```powershell
+pwsh -File tools/package.ps1
+```
+
+The packager uses pinned, SHA-256-verified AutoHotkey and Ahk2Exe archives and writes versioned artifacts plus `SHA256SUMS.txt` to `dist/`. See [`docs/PACKAGING.md`](docs/PACKAGING.md) for the package contract and unsigned/non-installer boundary.
+
+CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification. The package job compiles and validates the same portable package but does not publish a GitHub Release.
 
 Desktop integration checks and the release gate are documented in [`docs/TESTING.md`](docs/TESTING.md). Use that matrix for clipboard/input changes and before releases rather than treating headless CI as proof of compatibility with every Windows editor.
 
@@ -96,7 +107,9 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 | `app/lib/text-transforms.ahk` | pure text transformation core                |
 | `app/awful-cases.ini`         | hotkeys and cleanup settings                 |
 | `app/awful-cases.ico`         | app icon                                     |
-| `tests/`                      | regression and repository contract tests    |
+| `tools/package.ps1`           | canonical Windows portable packager          |
+| `tests/`                      | regression and repository/package contracts |
+| `docs/PACKAGING.md`           | package inputs, outputs and security boundary|
 | `docs/TESTING.md`             | desktop smoke matrix and release gate       |
 | `docs/index.html`             | checked-in GitHub Pages project/trainer page |
 
@@ -104,7 +117,7 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 
 Windows.
 
-AutoHotkey v2 is required only when running the `.ahk` source file directly.
+AutoHotkey v2 is required only when running the `.ahk` source file directly. PowerShell 7 is required for the canonical packaging command.
 
 ## License and rights
 
