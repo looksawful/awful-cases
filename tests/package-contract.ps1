@@ -19,6 +19,7 @@ $version = (Read-Required 'VERSION').Trim()
 $source = Read-Required 'app/awful-cases.ahk'
 $build = Read-Required 'tools/build.ps1'
 $package = Read-Required 'tools/package.ps1'
+$installSmoke = Read-Required 'tools/install-smoke.ps1'
 $installer = Read-Required 'installer/awful-cases.iss'
 $ci = Read-Required '.github/workflows/ci.yml'
 $release = Read-Required '.github/workflows/release.yml'
@@ -49,6 +50,21 @@ foreach ($pin in $toolPins) {
     }
 }
 
+foreach ($nativeScript in @(
+    @{ Name = 'tools/build.ps1'; Text = $build },
+    @{ Name = 'tools/package.ps1'; Text = $package }
+)) {
+    if ($nativeScript.Text -match '\$LASTEXITCODE') {
+        Fail "$($nativeScript.Name) must not depend on an unset LASTEXITCODE after GUI-subsystem tools"
+    }
+    if ($nativeScript.Text -notmatch 'Start-Process') {
+        Fail "$($nativeScript.Name) must use Start-Process for native packaging tools"
+    }
+    if ($nativeScript.Text -notmatch '\.ExitCode') {
+        Fail "$($nativeScript.Name) must validate native process ExitCode"
+    }
+}
+
 if ($source -match 'global\s+ConfigPath\s*:=\s*A_ScriptDir') {
     Fail 'installed configuration must not be hard-wired to A_ScriptDir'
 }
@@ -61,6 +77,14 @@ if ($source -notmatch 'A_AppData') {
 if ($source -notmatch 'Software\\Microsoft\\Windows\\CurrentVersion\\Run') {
     Fail 'application must expose current-user startup integration'
 }
+foreach ($uiText in @('Система', 'System', 'Запускать Awful Cases вместе с Windows', 'Start Awful Cases with Windows')) {
+    if ($source -notmatch [regex]::Escape($uiText)) {
+        Fail "Settings must expose localized startup control text '$uiText'"
+    }
+}
+if ($source -notmatch 'SetAutoStartEnabled\(') {
+    Fail 'Settings must apply the startup state through SetAutoStartEnabled()'
+}
 
 if ($installer -notmatch 'PrivilegesRequired\s*=\s*lowest') {
     Fail 'installer must be per-user and not require elevation'
@@ -70,6 +94,22 @@ if ($installer -notmatch '\{localappdata\}\\Programs\\Awful Cases') {
 }
 if ($installer -notmatch 'Awful Cases.*CurrentVersion\\Run|CurrentVersion\\Run.*Awful Cases') {
     Fail 'installer must offer current-user startup registration'
+}
+if ($installer -notmatch 'CurUninstallStepChanged') {
+    Fail 'installer must clean application-owned startup state during uninstall'
+}
+if ($installer -notmatch 'RegDeleteValue\s*\(') {
+    Fail 'installer uninstall cleanup must remove the Awful Cases Run value explicitly'
+}
+
+if ($installSmoke -notmatch 'Awful-Cases-Setup-\$version-x64\.exe') {
+    Fail 'install smoke must target the versioned installer'
+}
+if ($installSmoke -notmatch 'CurrentVersion\\Run') {
+    Fail 'install smoke must exercise startup-registry cleanup'
+}
+if ($installSmoke -notmatch 'unins000\.exe') {
+    Fail 'install smoke must execute the generated uninstaller'
 }
 
 if ($ci -match '(?mi)^\s*contents\s*:\s*write\s*$') {
@@ -81,12 +121,24 @@ if ($ci -notmatch '(?m)^\s*package\s*:\s*$') {
 if ($ci -notmatch 'tools/package\.ps1') {
     Fail 'ordinary CI package job must run tools/package.ps1'
 }
+if ($ci -notmatch 'tools/install-smoke\.ps1') {
+    Fail 'ordinary CI package job must run installer lifecycle smoke checks'
+}
 
 if ($release -notmatch '(?m)^\s*workflow_dispatch\s*:') {
     Fail 'release workflow must be manually dispatched'
 }
 if ($release -notmatch 'desktop_smoke_passed') {
     Fail 'release workflow must require explicit desktop smoke confirmation'
+}
+if ($release -notmatch 'release_commit_sha') {
+    Fail 'release workflow must bind desktop smoke evidence to an explicit commit SHA'
+}
+if ($release -notmatch "release_commit_sha.*GITHUB_SHA|GITHUB_SHA.*release_commit_sha") {
+    Fail 'release workflow must compare release_commit_sha with GITHUB_SHA'
+}
+if ($release -notmatch 'tests/package-contract\.ps1') {
+    Fail 'release workflow must run package contracts explicitly'
 }
 if ($release -notmatch '(?mi)^\s*contents\s*:\s*write\s*$') {
     Fail 'release workflow needs narrowly scoped contents write permission'
