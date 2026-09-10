@@ -16,6 +16,8 @@ By default artifacts are written to `dist/`. A different output directory can be
 pwsh -File tools/package.ps1 -OutputDirectory C:\path\to\dist
 ```
 
+The packager never recursively deletes the selected output directory. Existing unrelated files are preserved; only the three package-owned outputs for the current build are replaced. The repository root and drive roots are rejected as output destinations, and an output path occupied by a file or conflicting directory fails closed.
+
 ## Pinned toolchain
 
 Packaging downloads only the following pinned official archives and verifies SHA-256 before extraction:
@@ -43,7 +45,7 @@ The package command treats these repository files as inputs:
 
 The production source is not rewritten. Packaging copies `app/` to a temporary build directory and prepends Ahk2Exe version-resource directives only to that temporary copy.
 
-`VERSION` is the package version source. Existing repository contracts require `VERSION` and `AppVersion` to agree before packaging succeeds. The Windows file version emitted by Ahk2Exe is derived from `VERSION` as `x.y.z.0`.
+`VERSION` is the package version source. Existing repository contracts require `VERSION` and `AppVersion` to agree before packaging succeeds. Windows `FileVersion` and `ProductVersion` emitted by Ahk2Exe are derived from `VERSION` as `x.y.z.0` and are verified exactly.
 
 ## Artifacts for 0.1.0
 
@@ -72,11 +74,13 @@ The INI ships beside the executable so the package has explicit starting default
 - packaging is run outside Windows;
 - a required repository input is missing;
 - repository consistency contracts fail;
+- a dangerous output destination such as the repository root or drive root is supplied;
+- an expected output path is occupied by a directory or the output destination is a file;
 - a downloaded tool archive does not match its pinned SHA-256;
 - the x64 AutoHotkey base or Ahk2Exe executable cannot be found;
 - Ahk2Exe returns a non-zero exit code;
 - the expected executable or ZIP is absent;
-- compiled `FileVersion` does not match `VERSION`;
+- compiled `FileVersion` or `ProductVersion` does not exactly match `VERSION` as `x.y.z.0`;
 - the ZIP does not contain all required members.
 
 After successful assembly, SHA-256 digests for the standalone EXE and portable ZIP are written to `SHA256SUMS.txt`.
