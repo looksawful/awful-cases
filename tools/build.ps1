@@ -38,9 +38,16 @@ Write-Host "Compiling Awful Cases $version"
 Write-Host "Source: $sourcePath"
 Write-Host "Output: $outputPath"
 
-& $Ahk2ExePath /in $sourcePath /out $outputPath /base $AutoHotkeyBasePath /icon $iconPath /silent verbose
-if ($LASTEXITCODE -ne 0) {
-    throw "Ahk2Exe failed with exit code $LASTEXITCODE."
+$compilerArgs = @(
+    '/in', $sourcePath,
+    '/out', $outputPath,
+    '/base', $AutoHotkeyBasePath,
+    '/icon', $iconPath,
+    '/silent', 'verbose'
+)
+$compiler = Start-Process -FilePath $Ahk2ExePath -ArgumentList $compilerArgs -Wait -PassThru -NoNewWindow
+if ($compiler.ExitCode -ne 0) {
+    throw "Ahk2Exe failed with exit code $($compiler.ExitCode)."
 }
 
 if (-not (Test-Path -LiteralPath $outputPath -PathType Leaf)) {
