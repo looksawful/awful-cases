@@ -1,10 +1,25 @@
 # Awful Cases
 
-[Website](https://looksawful.github.io/awful-cases/) · [Download ZIP](https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip) · [looksawful.ru](https://looksawful.ru)
+[Website](https://looksawful.github.io/awful-cases/) · [Releases](https://github.com/looksawful/awful-cases/releases) · [Source ZIP](https://github.com/looksawful/awful-cases/archive/refs/heads/main.zip) · [looksawful.ru](https://looksawful.ru)
 
 Windows tray utility for changing the case and typography of selected text.
 
 Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app replaces the selection with the transformed version.
+
+## Windows distribution
+
+The canonical Windows x64 packaging pipeline produces:
+
+* `Awful-Cases-<version>-x64.exe` — standalone executable;
+* `Awful-Cases-Portable-<version>-x64.zip` — portable build with a side-by-side configuration;
+* `Awful-Cases-Setup-<version>-x64.exe` — per-user installer that does not require elevation;
+* `SHA256SUMS.txt` — SHA-256 hashes for the three release artifacts.
+
+The installer targets `%LOCALAPPDATA%\Programs\Awful Cases`, creates a Start Menu shortcut, and offers an optional unchecked task to start Awful Cases with Windows. The same current-user startup setting can be toggled from the application tray.
+
+Public GitHub Releases are deliberately gated by the Windows desktop smoke matrix in `docs/TESTING.md`. The repository/source ZIP is source code, not an application installer.
+
+Current packages are unsigned. Windows SmartScreen may therefore show a reputation/signing warning until a separate code-signing solution is introduced.
 
 ## Features
 
@@ -67,9 +82,13 @@ URLs, domains, email addresses, file paths and inline/fenced code are protected 
 
 ## Configuration
 
-Settings are stored in `awful-cases.ini`.
+Awful Cases chooses the configuration location from the execution mode:
 
-The file must be placed next to `awful-cases.exe` or `awful-cases.ahk`.
+* installed compiled app: `%APPDATA%\Awful Cases\awful-cases.ini`;
+* portable compiled app with `portable.flag` beside the executable: `awful-cases.ini` beside the executable;
+* `.ahk` source execution: `awful-cases.ini` beside the source file.
+
+On the first installed run, if AppData has no configuration but a legacy side-by-side `awful-cases.ini` exists beside the executable, Awful Cases copies that configuration into AppData before starting.
 
 The Settings dialog's Reset button stages default values in the UI. Persistent settings change only after Save. The tray command `Reset to defaults` remains an explicit immediate reset.
 
@@ -82,7 +101,15 @@ pwsh -File tests/repo-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
-CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification.
+Build all release-shaped Windows artifacts with:
+
+```powershell
+pwsh -File tools/package.ps1
+```
+
+The package command downloads only the pinned official AutoHotkey, Ahk2Exe and Inno Setup tool versions defined by the packaging contract and verifies each download with SHA-256 before execution. Output is written to `dist/`.
+
+CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification. A separate CI package job builds the Windows artifacts for inspection but does not publish a GitHub Release.
 
 Desktop integration checks and the release gate are documented in [`docs/TESTING.md`](docs/TESTING.md). Use that matrix for clipboard/input changes and before releases rather than treating headless CI as proof of compatibility with every Windows editor.
 
@@ -94,17 +121,21 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 | ----------------------------- | -------------------------------------------- |
 | `app/awful-cases.ahk`         | Windows integration / application entry     |
 | `app/lib/text-transforms.ahk` | pure text transformation core                |
-| `app/awful-cases.ini`         | hotkeys and cleanup settings                 |
+| `app/lib/app-paths.ahk`       | installed/portable config path selection     |
+| `app/awful-cases.ini`         | default hotkeys and cleanup settings         |
 | `app/awful-cases.ico`         | app icon                                     |
-| `tests/`                      | regression and repository contract tests    |
+| `installer/awful-cases.iss`   | per-user Inno Setup definition               |
+| `tools/build.ps1`             | explicit Ahk2Exe build wrapper               |
+| `tools/package.ps1`           | pinned Windows package pipeline              |
+| `tests/`                      | regression and repository/package contracts |
 | `docs/TESTING.md`             | desktop smoke matrix and release gate       |
 | `docs/index.html`             | checked-in GitHub Pages project/trainer page |
 
 ## Requirements
 
-Windows.
+Windows 10/11 x64 for packaged releases.
 
-AutoHotkey v2 is required only when running the `.ahk` source file directly.
+The compiled executable and installer do not require a separate AutoHotkey installation. AutoHotkey v2 is required only when running the `.ahk` source file directly.
 
 ## License and rights
 
