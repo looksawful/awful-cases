@@ -14,6 +14,8 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
     $OutputDirectory = Join-Path $repoRoot 'dist'
 } elseif (-not [IO.Path]::IsPathRooted($OutputDirectory)) {
     $OutputDirectory = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputDirectory))
+} else {
+    $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 }
 
 $autoHotkeyVersion = '2.0.27'
@@ -72,6 +74,22 @@ function Wait-ForStableFile(
     throw "Timed out waiting for generated file: $Path"
 }
 
+function Assert-SafeOutputDirectory(
+    [string]$Path,
+    [string]$RepositoryRoot
+) {
+    $normalizedOutput = [IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($Path))
+    $normalizedRepo = [IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($RepositoryRoot))
+    $driveRoot = [IO.Path]::GetPathRoot($normalizedOutput)
+
+    if ($normalizedOutput -eq $normalizedRepo) {
+        throw 'OutputDirectory must not be the repository root. Use dist/ or another dedicated output directory.'
+    }
+    if ($normalizedOutput -eq [IO.Path]::TrimEndingDirectorySeparator($driveRoot)) {
+        throw 'OutputDirectory must not be a drive root.'
+    }
+}
+
 $versionPath = Join-Path $repoRoot 'VERSION'
 $sourceDir = Join-Path $repoRoot 'app'
 $sourcePath = Join-Path $sourceDir 'awful-cases.ahk'
@@ -100,10 +118,28 @@ if ($LASTEXITCODE -ne 0) {
     throw "Repository contracts failed with exit code $LASTEXITCODE."
 }
 
-if (Test-Path -LiteralPath $OutputDirectory) {
-    Remove-Item -LiteralPath $OutputDirectory -Recurse -Force
+Assert-SafeOutputDirectory $OutputDirectory $repoRoot
+if (Test-Path -LiteralPath $OutputDirectory -PathType Leaf) {
+    throw "OutputDirectory points to an existing file: $OutputDirectory"
 }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+
+$exeName = "awful-cases-v$version-windows-x64.exe"
+$zipName = "awful-cases-v$version-windows-x64.zip"
+$exeOut = Join-Path $OutputDirectory $exeName
+$zipOut = Join-Path $OutputDirectory $zipName
+$checksumOut = Join-Path $OutputDirectory 'SHA256SUMS.txt'
+
+# Preserve unrelated files in caller-supplied output directories. Only package-owned
+# artifacts for the current version are replaced.
+foreach ($artifactPath in @($exeOut, $zipOut, $checksumOut)) {
+    if (Test-Path -LiteralPath $artifactPath -PathType Container) {
+        throw "Package output path is occupied by a directory: $artifactPath"
+    }
+    if (Test-Path -LiteralPath $artifactPath -PathType Leaf) {
+        Remove-Item -LiteralPath $artifactPath -Force
+    }
+}
 
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("awful-cases-package-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
@@ -154,12 +190,6 @@ try {
         [Text.UTF8Encoding]::new($false)
     )
 
-    $exeName = "awful-cases-v$version-windows-x64.exe"
-    $zipName = "awful-cases-v$version-windows-x64.zip"
-    $exeOut = Join-Path $OutputDirectory $exeName
-    $zipOut = Join-Path $OutputDirectory $zipName
-    $checksumOut = Join-Path $OutputDirectory 'SHA256SUMS.txt'
-
     Write-Host "Compiling $exeName with Ahk2Exe v$ahk2ExeVersion / AutoHotkey v$autoHotkeyVersion..."
     Write-Host "Build source: $buildSource (exists: $(Test-Path -LiteralPath $buildSource))"
     & $compilerPath.FullName /in $buildSource /out $exeOut /icon $buildIcon /base $baseExe.FullName /silent verbose
@@ -174,8 +204,11 @@ try {
     Require-File $exeOut 'compiled executable'
 
     $versionInfo = (Get-Item -LiteralPath $exeOut).VersionInfo
-    if ([string]::IsNullOrWhiteSpace($versionInfo.FileVersion) -or -not $versionInfo.FileVersion.StartsWith($version)) {
-        throw "Compiled executable FileVersion '$($versionInfo.FileVersion)' does not match repository VERSION '$version'."
+    if ($versionInfo.FileVersion -ne $versionResource) {
+        throw "Compiled executable FileVersion '$($versionInfo.FileVersion)' does not match '$versionResource'."
+    }
+    if ($versionInfo.ProductVersion -ne $versionResource) {
+        throw "Compiled executable ProductVersion '$($versionInfo.ProductVersion)' does not match '$versionResource'."
     }
 
     $portableRootName = "awful-cases-v$version-windows-x64"
