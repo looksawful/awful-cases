@@ -18,9 +18,11 @@ function Require-File([string]$RelativePath) {
 $version = (Get-Content -LiteralPath (Join-Path $repoRoot 'VERSION') -Raw).Trim()
 $packageScriptPath = Require-File 'tools/package.ps1'
 $packagingGuidePath = Require-File 'docs/PACKAGING.md'
+$ciWorkflowPath = Require-File '.github/workflows/ci.yml'
 
 $packageScript = Get-Content -LiteralPath $packageScriptPath -Raw
 $packagingGuide = Get-Content -LiteralPath $packagingGuidePath -Raw
+$ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 
 $requiredScriptTokens = @(
     '2.0.27',
@@ -49,14 +51,27 @@ if ($packagingGuide -notmatch '(?i)unsigned') {
 if ($packagingGuide -notmatch '(?i)portable') {
     Fail 'docs/PACKAGING.md must describe the first package as portable'
 }
-if ($packagingGuide -match '(?i)installer') {
-    $installerClaims = [regex]::Matches($packagingGuide, '(?i)installer')
-    if ($packagingGuide -notmatch '(?i)(not|no|without|does not).*installer|installer.*(not|no|without)') {
-        Fail 'docs/PACKAGING.md mentions installer without an explicit non-installer boundary'
+if ($packagingGuide -match '(?i)installer' -and $packagingGuide -notmatch '(?i)(not|no|without|does not).*installer|installer.*(not|no|without)') {
+    Fail 'docs/PACKAGING.md mentions installer without an explicit non-installer boundary'
+}
+
+$requiredCiTokens = @(
+    'pwsh -File tools/package.ps1',
+    'pwsh -File tests/package-output.ps1',
+    '3d3c42e5aac5ba805825da76410c181273ba90b1',
+    'ea165f8d65b6e75b540449e92b4886f43607fa02'
+)
+foreach ($token in $requiredCiTokens) {
+    if ($ciWorkflow -notmatch [regex]::Escape($token)) {
+        Fail ".github/workflows/ci.yml is missing package verification token '$token'"
     }
+}
+if ($ciWorkflow -match '(?i)gh\s+release\s+create|softprops/action-gh-release|ncipollo/release-action') {
+    Fail 'ordinary CI must not publish GitHub Releases'
 }
 
 Write-Host 'Package repository contract passed.'
 Write-Host "Version: $version"
 Write-Host "Expected EXE: $expectedExe"
 Write-Host "Expected ZIP: $expectedZip"
+Write-Host 'Ordinary CI package verification: enforced, release publication: forbidden'
