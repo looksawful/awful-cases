@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.2.0
+
+- Added a canonical Windows x64 packaging pipeline that produces a standalone executable, portable ZIP, per-user Inno Setup installer and SHA-256 manifest.
+- Added installed configuration storage under `%APPDATA%\Awful Cases` while preserving side-by-side source configuration and a `portable.flag` portable mode.
+- Added first-run migration of a legacy side-by-side configuration into AppData for installed builds.
+- Added optional current-user Windows startup integration through the tray and installer.
+- Added pinned, hash-verified AutoHotkey v2.0.27, Ahk2Exe v1.1.37.02a2 and Inno Setup 7.1.0 packaging tools.
+- Added read-only CI package verification and a separate manually gated GitHub Release workflow that requires explicit desktop-smoke confirmation.
 - Fixed Toggle Case so Latin and Cyrillic letters actually invert case.
 - Prevented typography cleanup from corrupting decimals, semantic versions, IPv4-like values, times and ratios.
 - Preserved email local-part casing while normalizing domain casing.
