@@ -60,6 +60,14 @@ if ($versionMatch.Groups[1].Value -ne $version) {
     Fail "VERSION ($version) and AppVersion ($($versionMatch.Groups[1].Value)) differ"
 }
 
+$compilerVersionMatch = [regex]::Match($source, '(?m)^;@Ahk2Exe-SetVersion\s+([^\s]+)\s*$')
+if (-not $compilerVersionMatch.Success) {
+    Fail 'Ahk2Exe SetVersion directive was not found in app/awful-cases.ahk'
+}
+if ($compilerVersionMatch.Groups[1].Value -ne $version) {
+    Fail "VERSION ($version) and Ahk2Exe SetVersion ($($compilerVersionMatch.Groups[1].Value)) differ"
+}
+
 $changelog = Read-Text 'CHANGELOG.md'
 if ($changelog -notmatch "(?m)^##\s+$([regex]::Escape($version))\s*$") {
     Fail "CHANGELOG.md has no section for version $version"
@@ -152,6 +160,8 @@ if ($source -notmatch 'SendText\s+changedText') {
 if ($source -notmatch 'try\s+A_Clipboard\s*:=\s*savedClipboard\s*\r?\n\s*SendText\s+changedText') {
     Fail 'the original clipboard must be restored immediately before SendText'
 }
+
+& (Join-Path $PSScriptRoot 'package-contract.ps1')
 
 Write-Host 'Repository contracts passed.'
 Write-Host "Version: $version"
