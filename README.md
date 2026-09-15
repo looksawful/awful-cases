@@ -6,7 +6,7 @@ Windows tray utility for changing the case and typography of selected text.
 
 Awful Cases works through global hotkeys. Select text in any editable field, press a shortcut, and the app replaces the selection with the transformed version.
 
-> The repository archive linked above is source code, not an installer or published application release. Windows binary packaging is defined in [`docs/PACKAGING.md`](docs/PACKAGING.md); public binary download links belong here only after a real GitHub Release exists and its assets have been verified.
+> The repository archive linked above is source code, not an installer or published application release. Windows binary packaging is defined in [`docs/PACKAGING.md`](docs/PACKAGING.md). Public binary download links belong here only after a real GitHub Release exists and its assets have been verified.
 
 ## Features
 
@@ -82,6 +82,7 @@ Run the Windows test suite with:
 ```powershell
 pwsh -File tests/repo-contract.ps1
 pwsh -File tests/package-contract.ps1
+pwsh -File tests/release-contract.ps1
 pwsh -File tools/test.ps1
 ```
 
@@ -91,9 +92,11 @@ Build the portable Windows x64 package with:
 pwsh -File tools/package.ps1
 ```
 
-The packager uses pinned, SHA-256-verified AutoHotkey and Ahk2Exe archives and writes versioned artifacts plus `SHA256SUMS.txt` to `dist/`. See [`docs/PACKAGING.md`](docs/PACKAGING.md) for the package contract and unsigned/non-installer boundary.
+The packager uses pinned, SHA-256-verified AutoHotkey and Ahk2Exe archives and writes versioned artifacts plus `SHA256SUMS.txt` to `dist/`. See [`docs/PACKAGING.md`](docs/PACKAGING.md) for the package contract, safe output handling, and unsigned/non-installer boundary.
 
-CI runs repository consistency contracts and AutoHotkey regression tests on Windows using pinned AutoHotkey v2.0.27 with SHA-256 verification. The package job compiles and validates the same portable package but does not publish a GitHub Release.
+CI runs repository/package/release consistency contracts and AutoHotkey regression tests on Windows. Its package job compiles and validates the same portable package but does not publish a GitHub Release.
+
+A separate manually dispatched Release workflow is defined for publication. It requires exact repository `VERSION`, explicit real desktop-smoke confirmation, and a non-empty evidence note. It builds/verifies under read-only permissions, hands the verified candidate to a narrowly write-scoped publish job, creates a draft Release, downloads and verifies the uploaded assets, and only then publishes it. See [`docs/RELEASING.md`](docs/RELEASING.md).
 
 Desktop integration checks and the release gate are documented in [`docs/TESTING.md`](docs/TESTING.md). Use that matrix for clipboard/input changes and before releases rather than treating headless CI as proof of compatibility with every Windows editor.
 
@@ -108,9 +111,11 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 | `app/awful-cases.ini`         | hotkeys and cleanup settings                 |
 | `app/awful-cases.ico`         | app icon                                     |
 | `tools/package.ps1`           | canonical Windows portable packager          |
-| `tests/`                      | regression and repository/package contracts |
+| `tests/`                      | regression and repository/package/release contracts |
 | `docs/PACKAGING.md`           | package inputs, outputs and security boundary|
+| `docs/RELEASING.md`           | guarded GitHub Release procedure             |
 | `docs/TESTING.md`             | desktop smoke matrix and release gate       |
+| `.github/workflows/release.yml` | manual verified release publication        |
 | `docs/index.html`             | checked-in GitHub Pages project/trainer page |
 
 ## Requirements
@@ -118,6 +123,12 @@ Pure text transformations live in `app/lib/text-transforms.ahk`; Windows integra
 Windows.
 
 AutoHotkey v2 is required only when running the `.ahk` source file directly. PowerShell 7 is required for the canonical packaging command.
+
+## Distribution status
+
+The repository is capable of building and verifying the portable Windows package. A CI/package artifact is not a public application release. Until a real GitHub Release exists, the source ZIP remains the only repository download linked at the top of this README.
+
+Current portable builds are unsigned and are not installers. Windows may therefore show SmartScreen or reputation warnings.
 
 ## License and rights
 
