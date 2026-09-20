@@ -2,6 +2,7 @@
 #SingleInstance Force
 #UseHook
 #Include lib\text-transforms.ahk
+#Include lib\app-links.ahk
 ; Awful Cases
 ; Text case and typography utility for Windows.
 ; Copyright (c) 2026 Ivan Krushinsky
@@ -79,6 +80,7 @@ A_TrayMenu.Delete()
 A_TrayMenu.Add(AppName, (*) => ShowSettingsGui())
 A_TrayMenu.Disable(AppName)
 A_TrayMenu.Add()
+A_TrayMenu.Add("Training", (*) => OpenTraining())
 A_TrayMenu.Add("Settings", (*) => ShowSettingsGui())
 A_TrayMenu.Add("Open config", (*) => OpenConfig())
 A_TrayMenu.Add("About", (*) => ShowAbout())
@@ -474,6 +476,12 @@ return
 try A_Clipboard := savedClipboard
 SendText changedText
 ShowToast(message)
+}
+
+OpenTraining() {
+try Run(GetTrainingUrl())
+catch as err
+ShowToast("Cannot open training")
 }
 
 OpenConfig() {
