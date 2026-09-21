@@ -1,5 +1,11 @@
 # Awful Cases agent guide
 
+## Global reporting rule
+
+- EN: When reporting information to the user, be extremely concise. Sacrifice grammar if needed for brevity.
+- RU: При сообщении информации пользователю будь предельно краткой. Ради краткости можно жертвовать грамматикой.
+
+
 ## Scope
 
 Awful Cases is a Windows AutoHotkey v2 tray utility. The Windows integration entry point is `app/awful-cases.ahk`; pure text transformations live in `app/lib/text-transforms.ahk`; default settings are in `app/awful-cases.ini`; the public project page is the large self-contained `docs/index.html`.
