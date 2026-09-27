@@ -158,3 +158,17 @@ Release rules:
 A change is done only when the affected behavior has an automated regression/contract test where practical, relevant verification passes, known safety invariants still hold, and documentation is updated when behavior or operational rules change.
 
 A release is not done until the exact release commit has green required CI, package outputs have been verified, the applicable desktop smoke checks in `docs/TESTING.md` pass, version/changelog/config contracts agree, the guarded Release workflow publishes the assets, and the public GitHub Release plus checksums have been verified.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues are used for this repository. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage vocabulary is configured in `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.
