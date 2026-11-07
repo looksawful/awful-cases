@@ -1,0 +1,13 @@
+{
+  "name": "awful-cases-reference-storybook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "storybook": "storybook dev -p 6006 --config-dir .storybook",
+    "storybook:build": "storybook build --config-dir .storybook --output-dir storybook-static"
+  },
+  "devDependencies": {
+    "storybook": "10.6.0",
+    "@storybook/html-vite": "10.6.0"
+  }
+}
